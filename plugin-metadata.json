@@ -1,0 +1,7 @@
+{
+    "name": "steamworks",
+    "display_name": "SteamWorks",
+    "description": "The Steamworks API for SourcePawn and C++ plugins (ISteamWorks), after SM-SteamWorks",
+    "author": "Slynx (˙·٠● S l y n x ●٠·˙)",
+    "version": "{{semver}} @ {{github-sha}}"
+}

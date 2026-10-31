@@ -1,0 +1,44 @@
+#Requires -Version 5.1
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+
+if (-not $env:SEMVER) {
+    $tag = $null
+    try { $tag = git describe --tags --exact-match 2>$null } catch {}
+    if ($tag) { $env:SEMVER = $tag } else { Remove-Item Env:SEMVER -ErrorAction SilentlyContinue }
+}
+$env:GITHUB_SHA_SHORT = git rev-parse --short HEAD
+
+### --- MSVC ------------------------------------------------------------------
+$vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+$vsPath = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+if (-not $vsPath) { throw "MSVC not found on runner!" }
+$vcvars = Join-Path $vsPath "VC\Auxiliary\Build\vcvars64.bat"
+cmd /c "`"$vcvars`" && set" | ForEach-Object {
+    if ($_ -match "^(.*?)=(.*)$") { Set-Item -Path "env:$($matches[1])" -Value $matches[2] }
+}
+
+### --- SDKs ------------------------------------------------------------------
+$SDK_DIR = "$env:TEMP\sdk"
+$SOURCE2MODSDK_DIR = "$SDK_DIR\source2mod-sdk"
+if (Test-Path $SDK_DIR) { Remove-Item -Recurse -Force $SDK_DIR }
+New-Item -ItemType Directory -Force $SDK_DIR | Out-Null
+git clone --recursive https://github.com/Source2Mod/source2mod-sdk.git $SOURCE2MODSDK_DIR
+$env:SOURCE2MOD_SDK = $SOURCE2MODSDK_DIR
+
+### --- Build (AMBuild) --------------------------------------------------------
+# AMBuild itself is installed by the workflow; s2sdk and s2sdk-manifests come
+# from the SDK's submodules (vendor/s2sdk, vendor/s2sdk-manifests).
+$REPO_ROOT = Split-Path -Parent $PSScriptRoot
+$BUILD_DIR = "$REPO_ROOT\build"
+if (Test-Path $BUILD_DIR) { Remove-Item -Recurse -Force $BUILD_DIR }
+New-Item -ItemType Directory $BUILD_DIR | Out-Null
+Set-Location $BUILD_DIR
+python "$REPO_ROOT\configure.py" --enable-optimize --sdks cs2 --targets x86_64
+if ($LASTEXITCODE -ne 0) { throw "configure.py failed" }
+ambuild
+if ($LASTEXITCODE -ne 0) { throw "ambuild failed" }
+
+### --- Package ---------------------------------------------------------------
+# AMBuild wrote package\cs2\addons\source2mod\plugins\steamworks.smx.
+Copy-Item -Recurse -Force "$REPO_ROOT\panorama" "$BUILD_DIR\package\cs2\panorama"
