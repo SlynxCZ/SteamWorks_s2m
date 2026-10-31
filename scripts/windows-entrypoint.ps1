@@ -41,4 +41,3 @@ if ($LASTEXITCODE -ne 0) { throw "ambuild failed" }
 
 ### --- Package ---------------------------------------------------------------
 # AMBuild wrote package\cs2\addons\source2mod\plugins\steamworks.smx.
-Copy-Item -Recurse -Force "$REPO_ROOT\panorama" "$BUILD_DIR\package\cs2\panorama"

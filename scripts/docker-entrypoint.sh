@@ -39,5 +39,3 @@ ambuild
 
 ### --- Package -------------------------------------------------------------
 # AMBuild wrote package/cs2/addons/source2mod/plugins/steamworks.smx;
-# the panorama sources for the client addon go next to it.
-cp -r ../panorama package/cs2/panorama
