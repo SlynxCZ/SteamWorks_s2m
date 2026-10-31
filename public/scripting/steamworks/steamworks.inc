@@ -5,8 +5,9 @@
 
 /*
  * The Steamworks API for Source2Mod scripts, served by the SteamWorks_s2m plugin.
- * Names and behaviour after alliedmodders/SM-SteamWorks (GPLv3); a client is a
- * player slot.
+ * The interfaces themselves are the methodmaps of the includes below (SteamGameServer,
+ * SteamUGC, ...), generated from the SDK. This file is what they do not cover:
+ * Steam's forwards, a request handle that goes with its script, the game coordinator.
  */
 #include <source2mod/types>
 
@@ -280,162 +281,15 @@ stock bool IsHTTPStatusSuccess(EHTTPStatusCode eStatusCode)
 
 /** The game server's Steam API is up. */
 native bool SteamWorks_IsLoaded();
-/** Logged on to Steam. */
-native bool SteamWorks_IsConnected();
-/** VAC secured; false before logged on. */
-native bool SteamWorks_IsVACEnabled();
 
-/** @return false while Steam does not know it yet */
-native bool SteamWorks_GetPublicIP(int ipaddr[4]);
-native int SteamWorks_GetPublicIPCell();
-/** The FakeIP and port of a server started with -enablefakeip. */
-native bool SteamWorks_GetFakeIP(int &ip, int &port);
-
-/* What the server browser shows; the engine may set some of these again itself. All false while Steam is down. */
-native bool SteamWorks_SetGameData(const char[] sData);
-native bool SteamWorks_SetGameDescription(const char[] sDesc);
-native bool SteamWorks_SetMapName(const char[] sMapName);
-native bool SteamWorks_SetGameTags(const char[] sTags);
-native bool SteamWorks_SetServerName(const char[] sName);
-native bool SteamWorks_SetRegion(const char[] sRegion);
-native bool SteamWorks_SetRule(const char[] sKey, const char[] sValue);
-native bool SteamWorks_ClearRules();
-native bool SteamWorks_SetBotCount(int count);
-native bool SteamWorks_SetAdvertiseServerActive(bool bActive);
-
-/** A no-op, the SDK dropped it. @return Always false */
-#pragma deprecated Removed from the Steamworks SDK, heartbeats are implicit
-native bool SteamWorks_ForceHeartbeat();
-
-/**
- * Asks whether a player is in a group, by the group's 32-bit account id;
- * SteamWorks_OnClientGroupStatus answers.
- * @return false when the question did not go out (not logged on, no such client)
- */
-native bool SteamWorks_GetUserGroupStatus(CPlayerSlot slot, int groupid);
-native bool SteamWorks_GetUserGroupStatusAuthID(int authid, int groupid);
-
-native EUserHasLicenseForAppResult SteamWorks_HasLicenseForApp(CPlayerSlot slot, int app);
-native EUserHasLicenseForAppResult SteamWorks_HasLicenseForAppId(int authid, int app);
-
-/** The 64-bit SteamID as decimal text. @return Bytes written */
-native int SteamWorks_GetClientSteamID(CPlayerSlot slot, char[] sSteamID, int length);
-/** The server's own. @return Bytes written */
-native int SteamWorks_GetServerSteamID(char[] sSteamID, int length);
 /** Whose game a validated player plays: differs from theirs on a shared one. */
 native bool SteamWorks_GetClientOwnerAuthID(CPlayerSlot slot, int &ownerAuthId);
 
-/* The player's stats of the server's own app. Ask, wait for SteamWorks_OnUserStatsReceived, read. */
-native bool SteamWorks_RequestStats(CPlayerSlot slot, int appid = 0);
-native bool SteamWorks_RequestStatsAuthID(int authid, int appid = 0);
-native bool SteamWorks_GetStatCell(CPlayerSlot slot, const char[] sKey, int &value);
-native bool SteamWorks_GetStatAuthIDCell(int authid, const char[] sKey, int &value);
-native bool SteamWorks_GetStatFloat(CPlayerSlot slot, const char[] sKey, float &value);
-native bool SteamWorks_GetStatAuthIDFloat(int authid, const char[] sKey, float &value);
-native bool SteamWorks_GetUserAchievement(int authid, const char[] sKey, bool &achieved);
+/** One Workshop item's details, without the query handles of SteamUGC. */
+typedef SteamWorksUGCDetailsCallback = function void (const char[] itemId, EResult result, const char[] title, int timeUpdated, int fileSize, any data);
+native bool SteamWorks_QueryItemDetails(const char[] itemId, SteamWorksUGCDetailsCallback callback, any data = 0);
 
-/** Steam validated a player; ownerauthid differs from authid on a shared game. */
-forward void SW_OnValidateClient(int ownerauthid, int authid);
-forward void SteamWorks_OnValidateClient(int ownerauthid, int authid);
-
-forward void SteamWorks_SteamServersConnected();
-forward void SteamWorks_SteamServersConnectFailure(EResult result);
-forward void SteamWorks_SteamServersDisconnected(EResult result);
-
-forward void SteamWorks_OnClientGroupStatus(int authid, int groupid, bool isMember, bool isOfficer);
-
-forward void SteamWorks_OnUserStatsReceived(int authid, EResult result);
-forward void SteamWorks_OnUserStatsUnloaded(int authid);
-forward void SteamWorks_OnUserStatsStored(int authid, EResult result);
-
-/**
- * Creates a new HTTP request. The URL must be absolute and start with http:// or https://.
- *
- * The returned handle must be freed with CloseHandle/delete once the request is finished.
- *
- * @param method        HTTP method to use.
- * @param sURL          Absolute URL for the request.
- * @return              A handle to the new HTTP request, or INVALID_HANDLE on failure
- *                      (including when not connected to Steam).
- */
-native Handle SteamWorks_CreateHTTPRequest(EHTTPMethod method, const char[] sURL);
-
-/**
- * Sets one or two context values that will be passed back to the request's callbacks.
- * These let you associate arbitrary data with a request.
- *
- * @param hHandle       HTTP request handle.
- * @param data1         First context value.
- * @param data2         Second context value.
- * @return              True on success, false on an invalid handle or if the request was
- *                      already sent.
- */
-native bool SteamWorks_SetHTTPRequestContextValue(Handle hHandle, any data1, any data2=0);
-
-/**
- * Sets a network-activity timeout, in seconds, for the request. Must be called before sending.
- * The default is 60 seconds. The timer resets whenever more data is received.
- *
- * @param hHandle       HTTP request handle.
- * @param timeout       Timeout in seconds.
- * @return              True on success, false on an invalid handle or if the request was
- *                      already sent.
- */
-native bool SteamWorks_SetHTTPRequestNetworkActivityTimeout(Handle hHandle, int timeout);
-
-/**
- * Sets a request header value. Must be called before sending the request.
- *
- * @param hHandle       HTTP request handle.
- * @param sName         Header name.
- * @param sValue        Header value.
- * @return              True on success, false on an invalid handle or if the request was
- *                      already sent.
- */
-native bool SteamWorks_SetHTTPRequestHeaderValue(Handle hHandle, const char[] sName, const char[] sValue);
-
-/**
- * Sets a GET or POST parameter on the request (which is used depends on the request method).
- * Must be called before sending the request.
- *
- * @param hHandle       HTTP request handle.
- * @param sName         Parameter name.
- * @param sValue        Parameter value.
- * @return              True on success, false on an invalid handle or if the request was
- *                      already sent.
- */
-native bool SteamWorks_SetHTTPRequestGetOrPostParameter(Handle hHandle, const char[] sName, const char[] sValue);
-
-/**
- * Appends extra user-agent info to the request. This does not clobber the normal user
- * agent; it is added to the end.
- *
- * @param hHandle       HTTP request handle.
- * @param sUserAgentInfo    Extra user-agent info string.
- * @return              True on success, false on an invalid handle.
- */
-native bool SteamWorks_SetHTTPRequestUserAgentInfo(Handle hHandle, const char[] sUserAgentInfo);
-
-/**
- * Enables or disables verification of SSL/TLS certificates. By default, certificates
- * are verified for all HTTPS requests.
- *
- * @param hHandle       HTTP request handle.
- * @param bRequireVerifiedCertificate   True to require a verified certificate, false to disable.
- * @return              True on success, false on an invalid handle.
- */
-native bool SteamWorks_SetHTTPRequestRequiresVerifiedCertificate(Handle hHandle, bool bRequireVerifiedCertificate);
-
-/**
- * Sets an absolute timeout, in milliseconds, on the request. Unlike the network-activity
- * timeout, this is a total time limit that does not reset as data arrives.
- *
- * @param hHandle       HTTP request handle.
- * @param unMilliseconds    Total timeout in milliseconds.
- * @return              True on success, false on an invalid handle.
- */
-native bool SteamWorks_SetHTTPRequestAbsoluteTimeoutMS(Handle hHandle, int unMilliseconds);
-
+/** A request whose handle goes with the script. SteamHTTP has the same calls on raw handles. */
 /**
  * Called when an HTTP request has completed (or failed). The number of trailing context
  * parameters matches how many values were passed to SteamWorks_SetHTTPRequestContextValue.
@@ -507,198 +361,6 @@ typeset SteamWorksHTTPBodyCallback
 	function void (const char[] sData);
 	function void (const char[] sData, any value);
 };
-
-/**
- * Sets the callbacks fired for a request. Must be called before sending the request.
- * The completion callback is used by both regular and streaming requests; the headers and
- * data callbacks are only fired for streaming requests.
- *
- * @param hHandle       HTTP request handle.
- * @param fCompleted    Callback fired when the request completes, or INVALID_FUNCTION.
- * @param fHeaders      Callback fired when streaming headers arrive, or INVALID_FUNCTION.
- * @param fData         Callback fired when a streaming data chunk arrives, or INVALID_FUNCTION.
- * @param hCalling      Handle of the plugin that owns the callbacks, or INVALID_HANDLE for
- *                      the calling plugin.
- * @return              True on success, false on an invalid handle.
- * @error               Invalid plugin handle or invalid function.
- */
-native bool SteamWorks_SetHTTPCallbacks(Handle hHandle, SteamWorksHTTPRequestCompleted fCompleted = INVALID_FUNCTION, SteamWorksHTTPHeadersReceived fHeaders = INVALID_FUNCTION, SteamWorksHTTPDataReceived fData = INVALID_FUNCTION, Handle hCalling = INVALID_HANDLE);
-
-/**
- * Sends an HTTP request. The result is delivered asynchronously to the completion callback
- * set with SteamWorks_SetHTTPCallbacks.
- *
- * @param hRequest      HTTP request handle.
- * @return              True if the request was sent, false on an invalid handle.
- */
-native bool SteamWorks_SendHTTPRequest(Handle hRequest);
-
-/**
- * Sends an HTTP request and streams the response. Headers and data are delivered
- * asynchronously to the callbacks set with SteamWorks_SetHTTPCallbacks.
- *
- * @param hRequest      HTTP request handle.
- * @return              True if the request was sent, false on an invalid handle.
- */
-native bool SteamWorks_SendHTTPRequestAndStreamResponse(Handle hRequest);
-
-/**
- * Moves an already-sent request to the tail of the client's request queue.
- *
- * @param hRequest      HTTP request handle.
- * @return              True on success, false on an invalid handle or if the request has
- *                      not been sent.
- */
-native bool SteamWorks_DeferHTTPRequest(Handle hRequest);
-
-/**
- * Moves an already-sent request to the head of the client's request queue.
- *
- * @param hRequest      HTTP request handle.
- * @return              True on success, false on an invalid handle or if the request has
- *                      not been sent.
- */
-native bool SteamWorks_PrioritizeHTTPRequest(Handle hRequest);
-
-/**
- * Checks whether a response header is present and retrieves the size of its value, so a
- * correctly-sized buffer can be allocated for SteamWorks_GetHTTPResponseHeaderValue.
- * Call from the completion callback.
- *
- * @param hRequest      HTTP request handle.
- * @param sHeader       Header name.
- * @param size          Variable to store the header value size in.
- * @return              True if the header is present, false otherwise.
- */
-native bool SteamWorks_GetHTTPResponseHeaderSize(Handle hRequest, const char[] sHeader, int &size);
-
-/**
- * Retrieves a response header value. Call from the completion callback. Use
- * SteamWorks_GetHTTPResponseHeaderSize first to size the buffer.
- *
- * @param hRequest      HTTP request handle.
- * @param sHeader       Header name.
- * @param sValue        Buffer to store the header value in.
- * @param size          Maximum length of the buffer.
- * @return              True on success, false if the header is not present or the buffer
- *                      is too small.
- */
-native bool SteamWorks_GetHTTPResponseHeaderValue(Handle hRequest, const char[] sHeader, char[] sValue, int size);
-
-/**
- * Retrieves the size of the response body. Call from the completion callback.
- *
- * @param hRequest      HTTP request handle.
- * @param size          Variable to store the body size in.
- * @return              True on success, false on an invalid handle.
- */
-native bool SteamWorks_GetHTTPResponseBodySize(Handle hRequest, int &size);
-
-/**
- * Retrieves the response body. Call from the completion callback. Use
- * SteamWorks_GetHTTPResponseBodySize first to size the buffer. Not valid for streaming
- * responses.
- *
- * @param hRequest      HTTP request handle.
- * @param sBody         Buffer to store the body in.
- * @param length        Length of the buffer, which must match the body size.
- * @return              True on success, false on an invalid handle, a streaming response,
- *                      or an incorrectly-sized buffer.
- */
-native bool SteamWorks_GetHTTPResponseBodyData(Handle hRequest, char[] sBody, int length);
-
-/**
- * Retrieves a chunk of a streaming response body. Call from the data-received callback,
- * passing the offset and length reported by that callback.
- *
- * @param hRequest      HTTP request handle.
- * @param cOffset       Offset of the chunk, as provided by the data-received callback.
- * @param sBody         Buffer to store the chunk in.
- * @param length        Length of the chunk, as provided by the data-received callback.
- * @return              True on success, false on an invalid handle, a non-streaming
- *                      response, or a mismatched offset/length.
- */
-native bool SteamWorks_GetHTTPStreamingResponseBodyData(Handle hRequest, int cOffset, char[] sBody, int length);
-
-/**
- * Retrieves download progress for the request. This is zero until a response header with a
- * content-length has been received; for responses with no content-length it stays zero.
- *
- * @param hRequest      HTTP request handle.
- * @param percent       Variable to store the progress percentage in.
- * @return              True on success, false on an invalid handle.
- */
-native bool SteamWorks_GetHTTPDownloadProgressPct(Handle hRequest, float &percent);
-
-/**
- * Checks whether the request failed because it timed out (rather than a harder failure).
- *
- * @param hRequest      HTTP request handle.
- * @param bWasTimedOut  Variable to store the result in.
- * @return              True on success, false on an invalid handle.
- */
-native bool SteamWorks_GetHTTPRequestWasTimedOut(Handle hRequest, bool &bWasTimedOut);
-
-/**
- * Sets a raw body for a POST request. Fails on a GET request or if GET/POST parameters
- * were already set. This makes the raw body the entire contents of the POST.
- *
- * @param hRequest      HTTP request handle.
- * @param sContentType  Value for the Content-Type header.
- * @param sBody         Raw body data.
- * @param bodylen       Length of the body, in bytes.
- * @return              True on success, false on failure.
- */
-native bool SteamWorks_SetHTTPRequestRawPostBody(Handle hRequest, const char[] sContentType, const char[] sBody, int bodylen);
-
-/**
- * Sets a raw POST body read from a file (relative to the game directory). Same constraints
- * as SteamWorks_SetHTTPRequestRawPostBody.
- *
- * @param hRequest      HTTP request handle.
- * @param sContentType  Value for the Content-Type header.
- * @param sFileName     Path to the file, relative to the game directory.
- * @return              True on success, false on failure (e.g. an empty file).
- * @error               Unable to open the file for reading.
- */
-native bool SteamWorks_SetHTTPRequestRawPostBodyFromFile(Handle hRequest, const char[] sContentType, const char[] sFileName);
-
-/**
- * Retrieves the full response body and passes it to a callback. Useful for bodies larger
- * than a single fixed buffer. Call from the completion callback.
- *
- * @param hRequest      HTTP request handle.
- * @param fCallback     Callback that receives the body.
- * @param data          Context value passed through to the callback.
- * @param hPlugin       Handle of the plugin that owns the callback, or INVALID_HANDLE for
- *                      the calling plugin.
- * @return              True on success, false on an invalid handle or if the body could not
- *                      be retrieved.
- * @error               Invalid plugin handle or invalid function.
- */
-native bool SteamWorks_GetHTTPResponseBodyCallback(Handle hRequest, SteamWorksHTTPBodyCallback fCallback, any data = 0, Handle hPlugin = INVALID_HANDLE);
-
-/**
- * Writes the full response body to a file (relative to the game directory). Call from the
- * completion callback.
- *
- * @param hRequest      HTTP request handle.
- * @param sFileName     Path to the output file, relative to the game directory.
- * @return              True on success, false on an invalid handle or if the body could not
- *                      be retrieved.
- * @error               Unable to open the file for writing.
- */
-native bool SteamWorks_WriteHTTPResponseBodyToFile(Handle hRequest, const char[] sFileName);
-
-/**
- * Sends a message to the Game Coordinator.
- *
- * @param unMsgType     Message type.
- * @param pubData       Message payload.
- * @param cubData       Size of the payload, in bytes.
- * @return              An EGCResults value; k_EGCResultNotLoggedOn if not connected to Steam.
- */
-native EGCResults SteamWorks_SendMessageToGC(int unMsgType, const char[] pubData, int cubData);
 
 methodmap SteamWorksHTTPRequest < Handle
 {
@@ -947,8 +609,6 @@ methodmap SteamWorksHTTPRequest < Handle
 	public native bool WriteResponseBodyToFile(const char[] sFileName);
 };
 
-/* Forwards */
-
 /**
  * A message the game reads as if the game coordinator had sent it, bytes as
  * SteamWorks_GCRetrieveMessage sees them. Refused (false) under core.json's
@@ -988,13 +648,21 @@ forward Source2ModAction SteamWorks_RestartRequested();
 /** The server is about to log on anonymously; a token written here logs it on with that GSLT. */
 forward void SteamWorks_TokenRequested(char[] sToken, int maxlen);
 
-/* Workshop items, by their decimal id. */
-native bool SteamWorks_DownloadItem(const char[] itemId, bool highPriority = true);
-/** EItemState flags. */
-native int SteamWorks_GetItemState(const char[] itemId);
-native bool SteamWorks_GetItemInstallInfo(const char[] itemId, char[] folder, int maxlen, int size[2], int &timestamp);
-typedef SteamWorksUGCDetailsCallback = function void (const char[] itemId, EResult result, const char[] title, int timeUpdated, int fileSize, any data);
-native bool SteamWorks_QueryItemDetails(const char[] itemId, SteamWorksUGCDetailsCallback callback, any data = 0);
+/** Steam validated a player; ownerauthid differs from authid on a shared game. */
+forward void SW_OnValidateClient(int ownerauthid, int authid);
+forward void SteamWorks_OnValidateClient(int ownerauthid, int authid);
+
+forward void SteamWorks_SteamServersConnected();
+forward void SteamWorks_SteamServersConnectFailure(EResult result);
+forward void SteamWorks_SteamServersDisconnected(EResult result);
+
+/** The answer to SteamGameServer.RequestUserGroupStatus. */
+forward void SteamWorks_OnClientGroupStatus(int authid, int groupid, bool isMember, bool isOfficer);
+
+forward void SteamWorks_OnUserStatsReceived(int authid, EResult result);
+forward void SteamWorks_OnUserStatsUnloaded(int authid);
+forward void SteamWorks_OnUserStatsStored(int authid, EResult result);
+
 forward void SteamWorks_OnWorkshopItemDownloaded(const char[] itemId, EResult result);
 
 #include <steamworks/all>

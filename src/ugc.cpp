@@ -54,38 +54,6 @@ namespace
         std::erase_if(g_queries, [this](const auto& q) { return q.get() == this; });
     }
 
-    // DownloadItem(item, highPriority)
-    cell_t N_DownloadItem(IPluginContext* ctx, const cell_t* params)
-    {
-        ISteamUGC* ugc = SteamGameServerUGC();
-        return ugc && ugc->DownloadItem(ItemId(ctx, params[1]), params[2] != 0);
-    }
-
-    cell_t N_GetItemState(IPluginContext* ctx, const cell_t* params)
-    {
-        ISteamUGC* ugc = SteamGameServerUGC();
-        return ugc ? static_cast<cell_t>(ugc->GetItemState(ItemId(ctx, params[1]))) : 0;
-    }
-
-    // GetItemInstallInfo(item, folder, maxlen, int size[2], &timestamp)
-    cell_t N_GetItemInstallInfo(IPluginContext* ctx, const cell_t* params)
-    {
-        ISteamUGC* ugc = SteamGameServerUGC();
-        char* folder = nullptr;
-        cell_t* size = nullptr;
-        cell_t* stamp = nullptr;
-        if (!ugc || ctx->LocalToString(params[2], &folder) != SP_ERROR_NONE || ctx->LocalToPhysAddr(params[4], &size) != SP_ERROR_NONE || ctx->LocalToPhysAddr(params[5], &stamp) != SP_ERROR_NONE)
-            return 0;
-        uint64 bytes = 0;
-        uint32 timestamp = 0;
-        if (!ugc->GetItemInstallInfo(ItemId(ctx, params[1]), &bytes, folder, static_cast<uint32>(params[3]), &timestamp))
-            return 0;
-        size[0] = static_cast<cell_t>(bytes & 0xFFFFFFFFu);
-        size[1] = static_cast<cell_t>(bytes >> 32);
-        *stamp = static_cast<cell_t>(timestamp);
-        return 1;
-    }
-
     // QueryItemDetails(item, callback, data)
     cell_t N_QueryItemDetails(IPluginContext* ctx, const cell_t* params)
     {
@@ -115,9 +83,6 @@ namespace
     }
 
     const sp_nativeinfo_t g_natives[] = {
-        { "SteamWorks_DownloadItem", N_DownloadItem },
-        { "SteamWorks_GetItemState", N_GetItemState },
-        { "SteamWorks_GetItemInstallInfo", N_GetItemInstallInfo },
         { "SteamWorks_QueryItemDetails", N_QueryItemDetails },
         { nullptr, nullptr },
     };
