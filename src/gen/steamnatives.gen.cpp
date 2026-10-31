@@ -3,6 +3,7 @@
 
 #include <steam/isteamnetworkingmessages.h>
 #include <steam/isteamnetworkingsockets.h>
+#include <steam/isteamnetworkingutils.h>
 #include <steam/steamnetworkingfakeip.h>
 
 #include <cstdlib>
@@ -282,6 +283,17 @@ namespace
         return result;
     }
 
+    cell_t N_SteamUtils_GetEnteredGamepadTextInput(IPluginContext* ctx, const cell_t* params)
+    {
+        auto* steam = SteamGameServerUtils();
+        if (!steam)
+            return 0;
+        char* a0 = nullptr; if (ctx->LocalToString(params[1], &a0) != SP_ERROR_NONE) return 0;
+        const cell_t result = steam->GetEnteredGamepadTextInput(a0, static_cast<uint32>(params[2])) ? 1 : 0;
+
+        return result;
+    }
+
     cell_t N_SteamUtils_GetSteamUILanguage(IPluginContext* ctx, const cell_t* params)
     {
         auto* steam = SteamGameServerUtils();
@@ -368,6 +380,17 @@ namespace
         if (!steam)
             return 0;
         const cell_t result = steam->InitFilterText(static_cast<uint32>(params[1])) ? 1 : 0;
+
+        return result;
+    }
+
+    cell_t N_SteamUtils_FilterText(IPluginContext* ctx, const cell_t* params)
+    {
+        auto* steam = SteamGameServerUtils();
+        if (!steam)
+            return 0;
+        char* a3 = nullptr; if (ctx->LocalToString(params[4], &a3) != SP_ERROR_NONE) return 0;
+        const cell_t result = static_cast<cell_t>(steam->FilterText(static_cast<ETextFilteringContext>(params[1]), CSteamID(static_cast<uint64>(U64(ctx, params[2]))), Str(ctx, params[3]), a3, static_cast<uint32>(params[5])));
 
         return result;
     }
@@ -497,6 +520,29 @@ namespace
         return result;
     }
 
+    void Push_P2PSessionState_t(IPluginFunction* fn, P2PSessionState_t* p)
+    {
+            fn->PushCell(static_cast<cell_t>(p->m_bConnectionActive));
+            fn->PushCell(static_cast<cell_t>(p->m_bConnecting));
+            fn->PushCell(static_cast<cell_t>(p->m_eP2PSessionError));
+            fn->PushCell(static_cast<cell_t>(p->m_bUsingRelay));
+            fn->PushCell(static_cast<cell_t>(p->m_nBytesQueuedForSend));
+            fn->PushCell(static_cast<cell_t>(p->m_nPacketsQueuedForSend));
+            fn->PushCell(static_cast<cell_t>(p->m_nRemoteIP));
+            fn->PushCell(static_cast<cell_t>(p->m_nRemotePort));
+    }
+
+    cell_t N_SteamNetworking_GetP2PSessionState(IPluginContext* ctx, const cell_t* params)
+    {
+        auto* steam = SteamGameServerNetworking();
+        if (!steam)
+            return 0;
+        P2PSessionState_t a1{};
+        const cell_t result = steam->GetP2PSessionState(CSteamID(static_cast<uint64>(U64(ctx, params[1]))), &a1) ? 1 : 0;
+        if (IPluginFunction* fn = ctx->GetFunctionById(static_cast<funcid_t>(params[2]))) { fn->PushCell(false); Push_P2PSessionState_t(fn, &a1); fn->PushCell(params[3]); fn->Execute(nullptr); }
+        return result;
+    }
+
     cell_t N_SteamNetworking_AllowP2PPacketRelay(IPluginContext* ctx, const cell_t* params)
     {
         auto* steam = SteamGameServerNetworking();
@@ -507,12 +553,34 @@ namespace
         return result;
     }
 
+    cell_t N_SteamNetworking_CreateListenSocket(IPluginContext* ctx, const cell_t* params)
+    {
+        auto* steam = SteamGameServerNetworking();
+        if (!steam)
+            return 0;
+        SteamIPAddress_t a1{}; a1.m_eType = k_ESteamIPTypeIPv4; a1.m_unIPv4 = static_cast<uint32>(params[2]);
+        const cell_t result = static_cast<cell_t>(steam->CreateListenSocket(static_cast<int>(params[1]), a1, static_cast<uint16>(params[3]), params[4] != 0));
+
+        return result;
+    }
+
     cell_t N_SteamNetworking_CreateP2PConnectionSocket(IPluginContext* ctx, const cell_t* params)
     {
         auto* steam = SteamGameServerNetworking();
         if (!steam)
             return 0;
         const cell_t result = static_cast<cell_t>(steam->CreateP2PConnectionSocket(CSteamID(static_cast<uint64>(U64(ctx, params[1]))), static_cast<int>(params[2]), static_cast<int>(params[3]), params[4] != 0));
+
+        return result;
+    }
+
+    cell_t N_SteamNetworking_CreateConnectionSocket(IPluginContext* ctx, const cell_t* params)
+    {
+        auto* steam = SteamGameServerNetworking();
+        if (!steam)
+            return 0;
+        SteamIPAddress_t a0{}; a0.m_eType = k_ESteamIPTypeIPv4; a0.m_unIPv4 = static_cast<uint32>(params[1]);
+        const cell_t result = static_cast<cell_t>(steam->CreateConnectionSocket(a0, static_cast<uint16>(params[2]), static_cast<int>(params[3])));
 
         return result;
     }
@@ -598,6 +666,36 @@ namespace
         return result;
     }
 
+    cell_t N_SteamNetworking_GetSocketInfo(IPluginContext* ctx, const cell_t* params)
+    {
+        auto* steam = SteamGameServerNetworking();
+        if (!steam)
+            return 0;
+        CSteamID a1{};
+        cell_t* c2 = nullptr; if (ctx->LocalToPhysAddr(params[4], &c2) != SP_ERROR_NONE) return 0; int a2{};
+        cell_t* c3 = nullptr; if (ctx->LocalToPhysAddr(params[5], &c3) != SP_ERROR_NONE) return 0; SteamIPAddress_t a3{};
+        cell_t* c4 = nullptr; if (ctx->LocalToPhysAddr(params[6], &c4) != SP_ERROR_NONE) return 0; uint16 a4{};
+        const cell_t result = steam->GetSocketInfo(static_cast<SNetSocket_t>(params[1]), &a1, &a2, &a3, &a4) ? 1 : 0;
+        ToBuffer(ctx, params[2], params[3], std::to_string(a1.ConvertToUint64()).c_str());
+        *c2 = static_cast<cell_t>(a2);
+        *c3 = static_cast<cell_t>(a3.m_unIPv4);
+        *c4 = static_cast<cell_t>(a4);
+        return result;
+    }
+
+    cell_t N_SteamNetworking_GetListenSocketInfo(IPluginContext* ctx, const cell_t* params)
+    {
+        auto* steam = SteamGameServerNetworking();
+        if (!steam)
+            return 0;
+        cell_t* c1 = nullptr; if (ctx->LocalToPhysAddr(params[2], &c1) != SP_ERROR_NONE) return 0; SteamIPAddress_t a1{};
+        cell_t* c2 = nullptr; if (ctx->LocalToPhysAddr(params[3], &c2) != SP_ERROR_NONE) return 0; uint16 a2{};
+        const cell_t result = steam->GetListenSocketInfo(static_cast<SNetListenSocket_t>(params[1]), &a1, &a2) ? 1 : 0;
+        *c1 = static_cast<cell_t>(a1.m_unIPv4);
+        *c2 = static_cast<cell_t>(a2);
+        return result;
+    }
+
     cell_t N_SteamNetworking_GetSocketConnectionType(IPluginContext* ctx, const cell_t* params)
     {
         auto* steam = SteamGameServerNetworking();
@@ -615,6 +713,266 @@ namespace
             return 0;
         const cell_t result = static_cast<cell_t>(steam->GetMaxPacketSize(static_cast<SNetSocket_t>(params[1])));
 
+        return result;
+    }
+
+    cell_t N_SteamHTTP_CreateHTTPRequest(IPluginContext* ctx, const cell_t* params)
+    {
+        auto* steam = SteamGameServerHTTP();
+        if (!steam)
+            return 0;
+        const cell_t result = static_cast<cell_t>(steam->CreateHTTPRequest(static_cast<EHTTPMethod>(params[1]), Str(ctx, params[2])));
+
+        return result;
+    }
+
+    cell_t N_SteamHTTP_SetHTTPRequestContextValue(IPluginContext* ctx, const cell_t* params)
+    {
+        auto* steam = SteamGameServerHTTP();
+        if (!steam)
+            return 0;
+        const cell_t result = steam->SetHTTPRequestContextValue(static_cast<HTTPRequestHandle>(params[1]), static_cast<uint64>(U64(ctx, params[2]))) ? 1 : 0;
+
+        return result;
+    }
+
+    cell_t N_SteamHTTP_SetHTTPRequestNetworkActivityTimeout(IPluginContext* ctx, const cell_t* params)
+    {
+        auto* steam = SteamGameServerHTTP();
+        if (!steam)
+            return 0;
+        const cell_t result = steam->SetHTTPRequestNetworkActivityTimeout(static_cast<HTTPRequestHandle>(params[1]), static_cast<uint32>(params[2])) ? 1 : 0;
+
+        return result;
+    }
+
+    cell_t N_SteamHTTP_SetHTTPRequestHeaderValue(IPluginContext* ctx, const cell_t* params)
+    {
+        auto* steam = SteamGameServerHTTP();
+        if (!steam)
+            return 0;
+        const cell_t result = steam->SetHTTPRequestHeaderValue(static_cast<HTTPRequestHandle>(params[1]), Str(ctx, params[2]), Str(ctx, params[3])) ? 1 : 0;
+
+        return result;
+    }
+
+    cell_t N_SteamHTTP_SetHTTPRequestGetOrPostParameter(IPluginContext* ctx, const cell_t* params)
+    {
+        auto* steam = SteamGameServerHTTP();
+        if (!steam)
+            return 0;
+        const cell_t result = steam->SetHTTPRequestGetOrPostParameter(static_cast<HTTPRequestHandle>(params[1]), Str(ctx, params[2]), Str(ctx, params[3])) ? 1 : 0;
+
+        return result;
+    }
+
+    cell_t N_SteamHTTP_SendHTTPRequest(IPluginContext* ctx, const cell_t* params)
+    {
+        auto* steam = SteamGameServerHTTP();
+        if (!steam)
+            return 0;
+        SteamAPICall_t a1{};
+        const cell_t result = steam->SendHTTPRequest(static_cast<HTTPRequestHandle>(params[1]), &a1) ? 1 : 0;
+        ToBuffer(ctx, params[2], params[3], std::to_string(static_cast<uint64>(a1)).c_str());
+        return result;
+    }
+
+    cell_t N_SteamHTTP_SendHTTPRequestAndStreamResponse(IPluginContext* ctx, const cell_t* params)
+    {
+        auto* steam = SteamGameServerHTTP();
+        if (!steam)
+            return 0;
+        SteamAPICall_t a1{};
+        const cell_t result = steam->SendHTTPRequestAndStreamResponse(static_cast<HTTPRequestHandle>(params[1]), &a1) ? 1 : 0;
+        ToBuffer(ctx, params[2], params[3], std::to_string(static_cast<uint64>(a1)).c_str());
+        return result;
+    }
+
+    cell_t N_SteamHTTP_DeferHTTPRequest(IPluginContext* ctx, const cell_t* params)
+    {
+        auto* steam = SteamGameServerHTTP();
+        if (!steam)
+            return 0;
+        const cell_t result = steam->DeferHTTPRequest(static_cast<HTTPRequestHandle>(params[1])) ? 1 : 0;
+
+        return result;
+    }
+
+    cell_t N_SteamHTTP_PrioritizeHTTPRequest(IPluginContext* ctx, const cell_t* params)
+    {
+        auto* steam = SteamGameServerHTTP();
+        if (!steam)
+            return 0;
+        const cell_t result = steam->PrioritizeHTTPRequest(static_cast<HTTPRequestHandle>(params[1])) ? 1 : 0;
+
+        return result;
+    }
+
+    cell_t N_SteamHTTP_GetHTTPResponseHeaderSize(IPluginContext* ctx, const cell_t* params)
+    {
+        auto* steam = SteamGameServerHTTP();
+        if (!steam)
+            return 0;
+        cell_t* c2 = nullptr; if (ctx->LocalToPhysAddr(params[3], &c2) != SP_ERROR_NONE) return 0; uint32 a2{};
+        const cell_t result = steam->GetHTTPResponseHeaderSize(static_cast<HTTPRequestHandle>(params[1]), Str(ctx, params[2]), &a2) ? 1 : 0;
+        *c2 = static_cast<cell_t>(a2);
+        return result;
+    }
+
+    cell_t N_SteamHTTP_GetHTTPResponseHeaderValue(IPluginContext* ctx, const cell_t* params)
+    {
+        auto* steam = SteamGameServerHTTP();
+        if (!steam)
+            return 0;
+        cell_t* c2 = nullptr; if (ctx->LocalToPhysAddr(params[3], &c2) != SP_ERROR_NONE) return 0; uint8 a2{};
+        const cell_t result = steam->GetHTTPResponseHeaderValue(static_cast<HTTPRequestHandle>(params[1]), Str(ctx, params[2]), &a2, static_cast<uint32>(params[4])) ? 1 : 0;
+        *c2 = static_cast<cell_t>(a2);
+        return result;
+    }
+
+    cell_t N_SteamHTTP_GetHTTPResponseBodySize(IPluginContext* ctx, const cell_t* params)
+    {
+        auto* steam = SteamGameServerHTTP();
+        if (!steam)
+            return 0;
+        cell_t* c1 = nullptr; if (ctx->LocalToPhysAddr(params[2], &c1) != SP_ERROR_NONE) return 0; uint32 a1{};
+        const cell_t result = steam->GetHTTPResponseBodySize(static_cast<HTTPRequestHandle>(params[1]), &a1) ? 1 : 0;
+        *c1 = static_cast<cell_t>(a1);
+        return result;
+    }
+
+    cell_t N_SteamHTTP_GetHTTPResponseBodyData(IPluginContext* ctx, const cell_t* params)
+    {
+        auto* steam = SteamGameServerHTTP();
+        if (!steam)
+            return 0;
+        cell_t* c1 = nullptr; if (ctx->LocalToPhysAddr(params[2], &c1) != SP_ERROR_NONE) return 0; uint8 a1{};
+        const cell_t result = steam->GetHTTPResponseBodyData(static_cast<HTTPRequestHandle>(params[1]), &a1, static_cast<uint32>(params[3])) ? 1 : 0;
+        *c1 = static_cast<cell_t>(a1);
+        return result;
+    }
+
+    cell_t N_SteamHTTP_GetHTTPStreamingResponseBodyData(IPluginContext* ctx, const cell_t* params)
+    {
+        auto* steam = SteamGameServerHTTP();
+        if (!steam)
+            return 0;
+        cell_t* c2 = nullptr; if (ctx->LocalToPhysAddr(params[3], &c2) != SP_ERROR_NONE) return 0; uint8 a2{};
+        const cell_t result = steam->GetHTTPStreamingResponseBodyData(static_cast<HTTPRequestHandle>(params[1]), static_cast<uint32>(params[2]), &a2, static_cast<uint32>(params[4])) ? 1 : 0;
+        *c2 = static_cast<cell_t>(a2);
+        return result;
+    }
+
+    cell_t N_SteamHTTP_ReleaseHTTPRequest(IPluginContext* ctx, const cell_t* params)
+    {
+        auto* steam = SteamGameServerHTTP();
+        if (!steam)
+            return 0;
+        const cell_t result = steam->ReleaseHTTPRequest(static_cast<HTTPRequestHandle>(params[1])) ? 1 : 0;
+
+        return result;
+    }
+
+    cell_t N_SteamHTTP_GetHTTPDownloadProgressPct(IPluginContext* ctx, const cell_t* params)
+    {
+        auto* steam = SteamGameServerHTTP();
+        if (!steam)
+            return 0;
+        cell_t* c1 = nullptr; if (ctx->LocalToPhysAddr(params[2], &c1) != SP_ERROR_NONE) return 0; float a1{};
+        const cell_t result = steam->GetHTTPDownloadProgressPct(static_cast<HTTPRequestHandle>(params[1]), &a1) ? 1 : 0;
+        *c1 = sp_ftoc(static_cast<float>(a1));
+        return result;
+    }
+
+    cell_t N_SteamHTTP_SetHTTPRequestRawPostBody(IPluginContext* ctx, const cell_t* params)
+    {
+        auto* steam = SteamGameServerHTTP();
+        if (!steam)
+            return 0;
+        cell_t* c2 = nullptr; if (ctx->LocalToPhysAddr(params[3], &c2) != SP_ERROR_NONE) return 0; uint8 a2{};
+        const cell_t result = steam->SetHTTPRequestRawPostBody(static_cast<HTTPRequestHandle>(params[1]), Str(ctx, params[2]), &a2, static_cast<uint32>(params[4])) ? 1 : 0;
+        *c2 = static_cast<cell_t>(a2);
+        return result;
+    }
+
+    cell_t N_SteamHTTP_CreateCookieContainer(IPluginContext* ctx, const cell_t* params)
+    {
+        auto* steam = SteamGameServerHTTP();
+        if (!steam)
+            return 0;
+        const cell_t result = static_cast<cell_t>(steam->CreateCookieContainer(params[1] != 0));
+
+        return result;
+    }
+
+    cell_t N_SteamHTTP_ReleaseCookieContainer(IPluginContext* ctx, const cell_t* params)
+    {
+        auto* steam = SteamGameServerHTTP();
+        if (!steam)
+            return 0;
+        const cell_t result = steam->ReleaseCookieContainer(static_cast<HTTPCookieContainerHandle>(params[1])) ? 1 : 0;
+
+        return result;
+    }
+
+    cell_t N_SteamHTTP_SetCookie(IPluginContext* ctx, const cell_t* params)
+    {
+        auto* steam = SteamGameServerHTTP();
+        if (!steam)
+            return 0;
+        const cell_t result = steam->SetCookie(static_cast<HTTPCookieContainerHandle>(params[1]), Str(ctx, params[2]), Str(ctx, params[3]), Str(ctx, params[4])) ? 1 : 0;
+
+        return result;
+    }
+
+    cell_t N_SteamHTTP_SetHTTPRequestCookieContainer(IPluginContext* ctx, const cell_t* params)
+    {
+        auto* steam = SteamGameServerHTTP();
+        if (!steam)
+            return 0;
+        const cell_t result = steam->SetHTTPRequestCookieContainer(static_cast<HTTPRequestHandle>(params[1]), static_cast<HTTPCookieContainerHandle>(params[2])) ? 1 : 0;
+
+        return result;
+    }
+
+    cell_t N_SteamHTTP_SetHTTPRequestUserAgentInfo(IPluginContext* ctx, const cell_t* params)
+    {
+        auto* steam = SteamGameServerHTTP();
+        if (!steam)
+            return 0;
+        const cell_t result = steam->SetHTTPRequestUserAgentInfo(static_cast<HTTPRequestHandle>(params[1]), Str(ctx, params[2])) ? 1 : 0;
+
+        return result;
+    }
+
+    cell_t N_SteamHTTP_SetHTTPRequestRequiresVerifiedCertificate(IPluginContext* ctx, const cell_t* params)
+    {
+        auto* steam = SteamGameServerHTTP();
+        if (!steam)
+            return 0;
+        const cell_t result = steam->SetHTTPRequestRequiresVerifiedCertificate(static_cast<HTTPRequestHandle>(params[1]), params[2] != 0) ? 1 : 0;
+
+        return result;
+    }
+
+    cell_t N_SteamHTTP_SetHTTPRequestAbsoluteTimeoutMS(IPluginContext* ctx, const cell_t* params)
+    {
+        auto* steam = SteamGameServerHTTP();
+        if (!steam)
+            return 0;
+        const cell_t result = steam->SetHTTPRequestAbsoluteTimeoutMS(static_cast<HTTPRequestHandle>(params[1]), static_cast<uint32>(params[2])) ? 1 : 0;
+
+        return result;
+    }
+
+    cell_t N_SteamHTTP_GetHTTPRequestWasTimedOut(IPluginContext* ctx, const cell_t* params)
+    {
+        auto* steam = SteamGameServerHTTP();
+        if (!steam)
+            return 0;
+        cell_t* c1 = nullptr; if (ctx->LocalToPhysAddr(params[2], &c1) != SP_ERROR_NONE) return 0; bool a1{};
+        const cell_t result = steam->GetHTTPRequestWasTimedOut(static_cast<HTTPRequestHandle>(params[1]), &a1) ? 1 : 0;
+        *c1 = static_cast<cell_t>(a1);
         return result;
     }
 
@@ -677,6 +1035,48 @@ namespace
         const SteamAPICall_t call = steam->SendQueryUGCRequest(static_cast<UGCQueryHandle_t>(U64(ctx, params[1])));
 
         return Track<SteamUGCQueryCompleted_t>(ctx, call, params[2], params[3], Push_SteamUGCQueryCompleted_t);
+    }
+
+    void Push_SteamUGCDetails_t(IPluginFunction* fn, SteamUGCDetails_t* p)
+    {
+            { const std::string s = std::to_string(static_cast<uint64>(p->m_nPublishedFileId)); fn->PushString(s.c_str()); }
+            fn->PushCell(static_cast<cell_t>(p->m_eResult));
+            fn->PushCell(static_cast<cell_t>(p->m_eFileType));
+            fn->PushCell(static_cast<cell_t>(p->m_nCreatorAppID));
+            fn->PushCell(static_cast<cell_t>(p->m_nConsumerAppID));
+            fn->PushString(p->m_rgchTitle);
+            fn->PushString(p->m_rgchDescription);
+            { const std::string s = std::to_string(static_cast<uint64>(p->m_ulSteamIDOwner)); fn->PushString(s.c_str()); }
+            fn->PushCell(static_cast<cell_t>(p->m_rtimeCreated));
+            fn->PushCell(static_cast<cell_t>(p->m_rtimeUpdated));
+            fn->PushCell(static_cast<cell_t>(p->m_rtimeAddedToUserList));
+            fn->PushCell(static_cast<cell_t>(p->m_eVisibility));
+            fn->PushCell(p->m_bBanned);
+            fn->PushCell(p->m_bAcceptedForUse);
+            fn->PushCell(p->m_bTagsTruncated);
+            fn->PushString(p->m_rgchTags);
+            { const std::string s = std::to_string(static_cast<uint64>(p->m_hFile)); fn->PushString(s.c_str()); }
+            { const std::string s = std::to_string(static_cast<uint64>(p->m_hPreviewFile)); fn->PushString(s.c_str()); }
+            fn->PushString(p->m_pchFileName);
+            fn->PushCell(static_cast<cell_t>(p->m_nFileSize));
+            fn->PushCell(static_cast<cell_t>(p->m_nPreviewFileSize));
+            fn->PushString(p->m_rgchURL);
+            fn->PushCell(static_cast<cell_t>(p->m_unVotesUp));
+            fn->PushCell(static_cast<cell_t>(p->m_unVotesDown));
+            fn->PushFloat(static_cast<float>(p->m_flScore));
+            fn->PushCell(static_cast<cell_t>(p->m_unNumChildren));
+            { const std::string s = std::to_string(static_cast<uint64>(p->m_ulTotalFilesSize)); fn->PushString(s.c_str()); }
+    }
+
+    cell_t N_SteamUGC_GetQueryUGCResult(IPluginContext* ctx, const cell_t* params)
+    {
+        auto* steam = SteamGameServerUGC();
+        if (!steam)
+            return 0;
+        SteamUGCDetails_t a2{};
+        const cell_t result = steam->GetQueryUGCResult(static_cast<UGCQueryHandle_t>(U64(ctx, params[1])), static_cast<uint32>(params[2]), &a2) ? 1 : 0;
+        if (IPluginFunction* fn = ctx->GetFunctionById(static_cast<funcid_t>(params[3]))) { fn->PushCell(false); Push_SteamUGCDetails_t(fn, &a2); fn->PushCell(params[4]); fn->Execute(nullptr); }
+        return result;
     }
 
     cell_t N_SteamUGC_GetQueryUGCNumTags(IPluginContext* ctx, const cell_t* params)
@@ -1780,6 +2180,19 @@ namespace
         return result;
     }
 
+    cell_t N_SteamInventory_GenerateItems(IPluginContext* ctx, const cell_t* params)
+    {
+        auto* steam = SteamGameServerInventory();
+        if (!steam)
+            return 0;
+        cell_t* c0 = nullptr; if (ctx->LocalToPhysAddr(params[1], &c0) != SP_ERROR_NONE) return 0; SteamInventoryResult_t a0{};
+        cell_t* c1 = nullptr; if (ctx->LocalToPhysAddr(params[2], &c1) != SP_ERROR_NONE) return 0; std::vector<SteamItemDef_t> a1; a1.resize(static_cast<size_t>(params[4])); for (size_t i = 0; i < a1.size(); i++) a1[i] = static_cast<SteamItemDef_t>(c1[i]);
+        cell_t* c2 = nullptr; if (ctx->LocalToPhysAddr(params[3], &c2) != SP_ERROR_NONE) return 0; std::vector<uint32> a2; a2.resize(static_cast<size_t>(params[4])); for (size_t i = 0; i < a2.size(); i++) a2[i] = static_cast<uint32>(c2[i]);
+        const cell_t result = steam->GenerateItems(&a0, a1.data(), a2.data(), static_cast<uint32>(params[4])) ? 1 : 0;
+        *c0 = static_cast<cell_t>(a0);
+        return result;
+    }
+
     cell_t N_SteamInventory_GrantPromoItems(IPluginContext* ctx, const cell_t* params)
     {
         auto* steam = SteamGameServerInventory();
@@ -1798,6 +2211,18 @@ namespace
             return 0;
         cell_t* c0 = nullptr; if (ctx->LocalToPhysAddr(params[1], &c0) != SP_ERROR_NONE) return 0; SteamInventoryResult_t a0{};
         const cell_t result = steam->AddPromoItem(&a0, static_cast<SteamItemDef_t>(params[2])) ? 1 : 0;
+        *c0 = static_cast<cell_t>(a0);
+        return result;
+    }
+
+    cell_t N_SteamInventory_AddPromoItems(IPluginContext* ctx, const cell_t* params)
+    {
+        auto* steam = SteamGameServerInventory();
+        if (!steam)
+            return 0;
+        cell_t* c0 = nullptr; if (ctx->LocalToPhysAddr(params[1], &c0) != SP_ERROR_NONE) return 0; SteamInventoryResult_t a0{};
+        cell_t* c1 = nullptr; if (ctx->LocalToPhysAddr(params[2], &c1) != SP_ERROR_NONE) return 0; std::vector<SteamItemDef_t> a1; a1.resize(static_cast<size_t>(params[3])); for (size_t i = 0; i < a1.size(); i++) a1[i] = static_cast<SteamItemDef_t>(c1[i]);
+        const cell_t result = steam->AddPromoItems(&a0, a1.data(), static_cast<uint32>(params[3])) ? 1 : 0;
         *c0 = static_cast<cell_t>(a0);
         return result;
     }
@@ -1883,6 +2308,25 @@ namespace
         const SteamAPICall_t call = steam->RequestEligiblePromoItemDefinitionsIDs(CSteamID(static_cast<uint64>(U64(ctx, params[1]))));
 
         return Track<SteamInventoryEligiblePromoItemDefIDs_t>(ctx, call, params[2], params[3], Push_SteamInventoryEligiblePromoItemDefIDs_t);
+    }
+
+    void Push_SteamInventoryStartPurchaseResult_t(IPluginFunction* fn, SteamInventoryStartPurchaseResult_t* p)
+    {
+            fn->PushCell(static_cast<cell_t>(p->m_result));
+            { const std::string s = std::to_string(static_cast<uint64>(p->m_ulOrderID)); fn->PushString(s.c_str()); }
+            { const std::string s = std::to_string(static_cast<uint64>(p->m_ulTransID)); fn->PushString(s.c_str()); }
+    }
+
+    cell_t N_SteamInventory_StartPurchase(IPluginContext* ctx, const cell_t* params)
+    {
+        auto* steam = SteamGameServerInventory();
+        if (!steam)
+            return 0;
+        cell_t* c0 = nullptr; if (ctx->LocalToPhysAddr(params[1], &c0) != SP_ERROR_NONE) return 0; std::vector<SteamItemDef_t> a0; a0.resize(static_cast<size_t>(params[3])); for (size_t i = 0; i < a0.size(); i++) a0[i] = static_cast<SteamItemDef_t>(c0[i]);
+        cell_t* c1 = nullptr; if (ctx->LocalToPhysAddr(params[2], &c1) != SP_ERROR_NONE) return 0; std::vector<uint32> a1; a1.resize(static_cast<size_t>(params[3])); for (size_t i = 0; i < a1.size(); i++) a1[i] = static_cast<uint32>(c1[i]);
+        const SteamAPICall_t call = steam->StartPurchase(a0.data(), a1.data(), static_cast<uint32>(params[3]));
+
+        return Track<SteamInventoryStartPurchaseResult_t>(ctx, call, params[4], params[5], Push_SteamInventoryStartPurchaseResult_t);
     }
 
     void Push_SteamInventoryRequestPricesResult_t(IPluginFunction* fn, SteamInventoryRequestPricesResult_t* p)
@@ -2006,6 +2450,50 @@ namespace
         return result;
     }
 
+    cell_t N_SteamNetworkingMessages_SendMessageToUser(IPluginContext* ctx, const cell_t* params)
+    {
+        auto* steam = SteamGameServerNetworkingMessages_SteamAPI();
+        if (!steam)
+            return 0;
+        SteamNetworkingIdentity a0; a0.Clear(); a0.ParseString(Str(ctx, params[1]));
+        const cell_t result = static_cast<cell_t>(steam->SendMessageToUser(a0, Str(ctx, params[2]), static_cast<uint32>(params[3]), static_cast<int>(params[4]), static_cast<int>(params[5])));
+
+        return result;
+    }
+
+    cell_t N_SteamNetworkingMessages_AcceptSessionWithUser(IPluginContext* ctx, const cell_t* params)
+    {
+        auto* steam = SteamGameServerNetworkingMessages_SteamAPI();
+        if (!steam)
+            return 0;
+        SteamNetworkingIdentity a0; a0.Clear(); a0.ParseString(Str(ctx, params[1]));
+        const cell_t result = steam->AcceptSessionWithUser(a0) ? 1 : 0;
+
+        return result;
+    }
+
+    cell_t N_SteamNetworkingMessages_CloseSessionWithUser(IPluginContext* ctx, const cell_t* params)
+    {
+        auto* steam = SteamGameServerNetworkingMessages_SteamAPI();
+        if (!steam)
+            return 0;
+        SteamNetworkingIdentity a0; a0.Clear(); a0.ParseString(Str(ctx, params[1]));
+        const cell_t result = steam->CloseSessionWithUser(a0) ? 1 : 0;
+
+        return result;
+    }
+
+    cell_t N_SteamNetworkingMessages_CloseChannelWithUser(IPluginContext* ctx, const cell_t* params)
+    {
+        auto* steam = SteamGameServerNetworkingMessages_SteamAPI();
+        if (!steam)
+            return 0;
+        SteamNetworkingIdentity a0; a0.Clear(); a0.ParseString(Str(ctx, params[1]));
+        const cell_t result = steam->CloseChannelWithUser(a0, static_cast<int>(params[2])) ? 1 : 0;
+
+        return result;
+    }
+
     cell_t N_SteamNetworkingSockets_AcceptConnection(IPluginContext* ctx, const cell_t* params)
     {
         auto* steam = SteamGameServerNetworkingSockets_SteamAPI();
@@ -2066,6 +2554,17 @@ namespace
         return 0;
     }
 
+    cell_t N_SteamNetworkingSockets_GetConnectionName(IPluginContext* ctx, const cell_t* params)
+    {
+        auto* steam = SteamGameServerNetworkingSockets_SteamAPI();
+        if (!steam)
+            return 0;
+        char* a1 = nullptr; if (ctx->LocalToString(params[2], &a1) != SP_ERROR_NONE) return 0;
+        const cell_t result = steam->GetConnectionName(static_cast<HSteamNetConnection>(params[1]), a1, static_cast<int>(params[3])) ? 1 : 0;
+
+        return result;
+    }
+
     cell_t N_SteamNetworkingSockets_SendMessageToConnection(IPluginContext* ctx, const cell_t* params)
     {
         auto* steam = SteamGameServerNetworkingSockets_SteamAPI();
@@ -2087,6 +2586,79 @@ namespace
         return result;
     }
 
+    void Push_SteamNetConnectionInfo_t(IPluginFunction* fn, SteamNetConnectionInfo_t* p)
+    {
+            { const std::string s = std::to_string(static_cast<uint64>(p->m_nUserData)); fn->PushString(s.c_str()); }
+            fn->PushCell(static_cast<cell_t>(p->m_hListenSocket));
+            fn->PushCell(static_cast<cell_t>(p->m__pad1));
+            fn->PushCell(static_cast<cell_t>(p->m_idPOPRemote));
+            fn->PushCell(static_cast<cell_t>(p->m_idPOPRelay));
+            fn->PushCell(static_cast<cell_t>(p->m_eState));
+            fn->PushCell(static_cast<cell_t>(p->m_eEndReason));
+            fn->PushString(p->m_szEndDebug);
+            fn->PushString(p->m_szConnectionDescription);
+            fn->PushCell(static_cast<cell_t>(p->m_nFlags));
+    }
+
+    cell_t N_SteamNetworkingSockets_GetConnectionInfo(IPluginContext* ctx, const cell_t* params)
+    {
+        auto* steam = SteamGameServerNetworkingSockets_SteamAPI();
+        if (!steam)
+            return 0;
+        SteamNetConnectionInfo_t a1{};
+        const cell_t result = steam->GetConnectionInfo(static_cast<HSteamNetConnection>(params[1]), &a1) ? 1 : 0;
+        if (IPluginFunction* fn = ctx->GetFunctionById(static_cast<funcid_t>(params[2]))) { fn->PushCell(false); Push_SteamNetConnectionInfo_t(fn, &a1); fn->PushCell(params[3]); fn->Execute(nullptr); }
+        return result;
+    }
+
+    cell_t N_SteamNetworkingSockets_GetDetailedConnectionStatus(IPluginContext* ctx, const cell_t* params)
+    {
+        auto* steam = SteamGameServerNetworkingSockets_SteamAPI();
+        if (!steam)
+            return 0;
+        char* a1 = nullptr; if (ctx->LocalToString(params[2], &a1) != SP_ERROR_NONE) return 0;
+        const cell_t result = static_cast<cell_t>(steam->GetDetailedConnectionStatus(static_cast<HSteamNetConnection>(params[1]), a1, static_cast<int>(params[3])));
+
+        return result;
+    }
+
+    cell_t N_SteamNetworkingSockets_GetListenSocketAddress(IPluginContext* ctx, const cell_t* params)
+    {
+        auto* steam = SteamGameServerNetworkingSockets_SteamAPI();
+        if (!steam)
+            return 0;
+        SteamNetworkingIPAddr a1; a1.Clear();
+        const cell_t result = steam->GetListenSocketAddress(static_cast<HSteamListenSocket>(params[1]), &a1) ? 1 : 0;
+        { char text[128] = ""; a1.ToString(text, sizeof(text), true); ToBuffer(ctx, params[2], params[3], text); }
+        return result;
+    }
+
+    cell_t N_SteamNetworkingSockets_CreateSocketPair(IPluginContext* ctx, const cell_t* params)
+    {
+        auto* steam = SteamGameServerNetworkingSockets_SteamAPI();
+        if (!steam)
+            return 0;
+        cell_t* c0 = nullptr; if (ctx->LocalToPhysAddr(params[1], &c0) != SP_ERROR_NONE) return 0; HSteamNetConnection a0{};
+        cell_t* c1 = nullptr; if (ctx->LocalToPhysAddr(params[2], &c1) != SP_ERROR_NONE) return 0; HSteamNetConnection a1{};
+        SteamNetworkingIdentity a3; a3.Clear(); a3.ParseString(Str(ctx, params[4]));
+        SteamNetworkingIdentity a4; a4.Clear(); a4.ParseString(Str(ctx, params[5]));
+        const cell_t result = steam->CreateSocketPair(&a0, &a1, params[3] != 0, &a3, &a4) ? 1 : 0;
+        *c0 = static_cast<cell_t>(a0);
+        *c1 = static_cast<cell_t>(a1);
+        return result;
+    }
+
+    cell_t N_SteamNetworkingSockets_GetIdentity(IPluginContext* ctx, const cell_t* params)
+    {
+        auto* steam = SteamGameServerNetworkingSockets_SteamAPI();
+        if (!steam)
+            return 0;
+        SteamNetworkingIdentity a0; a0.Clear();
+        const cell_t result = steam->GetIdentity(&a0) ? 1 : 0;
+        { char text[128] = ""; a0.ToString(text, sizeof(text)); ToBuffer(ctx, params[1], params[2], text); }
+        return result;
+    }
+
     cell_t N_SteamNetworkingSockets_InitAuthentication(IPluginContext* ctx, const cell_t* params)
     {
         auto* steam = SteamGameServerNetworkingSockets_SteamAPI();
@@ -2094,6 +2666,23 @@ namespace
             return 0;
         const cell_t result = static_cast<cell_t>(steam->InitAuthentication());
 
+        return result;
+    }
+
+    void Push_SteamNetAuthenticationStatus_t(IPluginFunction* fn, SteamNetAuthenticationStatus_t* p)
+    {
+            fn->PushCell(static_cast<cell_t>(p->m_eAvail));
+            fn->PushString(p->m_debugMsg);
+    }
+
+    cell_t N_SteamNetworkingSockets_GetAuthenticationStatus(IPluginContext* ctx, const cell_t* params)
+    {
+        auto* steam = SteamGameServerNetworkingSockets_SteamAPI();
+        if (!steam)
+            return 0;
+        SteamNetAuthenticationStatus_t a0{};
+        const cell_t result = static_cast<cell_t>(steam->GetAuthenticationStatus(&a0));
+        if (IPluginFunction* fn = ctx->GetFunctionById(static_cast<funcid_t>(params[1]))) { fn->PushCell(false); Push_SteamNetAuthenticationStatus_t(fn, &a0); fn->PushCell(params[2]); fn->Execute(nullptr); }
         return result;
     }
 
@@ -2147,6 +2736,17 @@ namespace
         return result;
     }
 
+    cell_t N_SteamNetworkingSockets_ResetIdentity(IPluginContext* ctx, const cell_t* params)
+    {
+        auto* steam = SteamGameServerNetworkingSockets_SteamAPI();
+        if (!steam)
+            return 0;
+        SteamNetworkingIdentity a0; a0.Clear(); a0.ParseString(Str(ctx, params[1]));
+        steam->ResetIdentity(&a0);
+
+        return 0;
+    }
+
     cell_t N_SteamNetworkingSockets_BeginAsyncRequestFakeIP(IPluginContext* ctx, const cell_t* params)
     {
         auto* steam = SteamGameServerNetworkingSockets_SteamAPI();
@@ -2154,6 +2754,298 @@ namespace
             return 0;
         const cell_t result = steam->BeginAsyncRequestFakeIP(static_cast<int>(params[1])) ? 1 : 0;
 
+        return result;
+    }
+
+    void Push_SteamNetworkingFakeIPResult_t(IPluginFunction* fn, SteamNetworkingFakeIPResult_t* p)
+    {
+            fn->PushCell(static_cast<cell_t>(p->m_eResult));
+            fn->PushCell(static_cast<cell_t>(p->m_unIP));
+    }
+
+    cell_t N_SteamNetworkingSockets_GetFakeIP(IPluginContext* ctx, const cell_t* params)
+    {
+        auto* steam = SteamGameServerNetworkingSockets_SteamAPI();
+        if (!steam)
+            return 0;
+        SteamNetworkingFakeIPResult_t a1{};
+        steam->GetFakeIP(static_cast<int>(params[1]), &a1);
+        if (IPluginFunction* fn = ctx->GetFunctionById(static_cast<funcid_t>(params[2]))) { fn->PushCell(false); Push_SteamNetworkingFakeIPResult_t(fn, &a1); fn->PushCell(params[3]); fn->Execute(nullptr); }
+        return 0;
+    }
+
+    cell_t N_SteamNetworkingSockets_GetRemoteFakeIPForConnection(IPluginContext* ctx, const cell_t* params)
+    {
+        auto* steam = SteamGameServerNetworkingSockets_SteamAPI();
+        if (!steam)
+            return 0;
+        SteamNetworkingIPAddr a1; a1.Clear();
+        const cell_t result = static_cast<cell_t>(steam->GetRemoteFakeIPForConnection(static_cast<HSteamNetConnection>(params[1]), &a1));
+        { char text[128] = ""; a1.ToString(text, sizeof(text), true); ToBuffer(ctx, params[2], params[3], text); }
+        return result;
+    }
+
+    cell_t N_SteamNetworkingUtils_InitRelayNetworkAccess(IPluginContext* ctx, const cell_t* params)
+    {
+        auto* steam = SteamNetworkingUtils_SteamAPI();
+        if (!steam)
+            return 0;
+        steam->InitRelayNetworkAccess();
+
+        return 0;
+    }
+
+    void Push_SteamRelayNetworkStatus_t(IPluginFunction* fn, SteamRelayNetworkStatus_t* p)
+    {
+            fn->PushCell(static_cast<cell_t>(p->m_eAvail));
+            fn->PushCell(static_cast<cell_t>(p->m_bPingMeasurementInProgress));
+            fn->PushCell(static_cast<cell_t>(p->m_eAvailNetworkConfig));
+            fn->PushCell(static_cast<cell_t>(p->m_eAvailAnyRelay));
+            fn->PushString(p->m_debugMsg);
+    }
+
+    cell_t N_SteamNetworkingUtils_GetRelayNetworkStatus(IPluginContext* ctx, const cell_t* params)
+    {
+        auto* steam = SteamNetworkingUtils_SteamAPI();
+        if (!steam)
+            return 0;
+        SteamRelayNetworkStatus_t a0{};
+        const cell_t result = static_cast<cell_t>(steam->GetRelayNetworkStatus(&a0));
+        if (IPluginFunction* fn = ctx->GetFunctionById(static_cast<funcid_t>(params[1]))) { fn->PushCell(false); Push_SteamRelayNetworkStatus_t(fn, &a0); fn->PushCell(params[2]); fn->Execute(nullptr); }
+        return result;
+    }
+
+    cell_t N_SteamNetworkingUtils_CheckPingDataUpToDate(IPluginContext* ctx, const cell_t* params)
+    {
+        auto* steam = SteamNetworkingUtils_SteamAPI();
+        if (!steam)
+            return 0;
+        const cell_t result = steam->CheckPingDataUpToDate(static_cast<float>(sp_ctof(params[1]))) ? 1 : 0;
+
+        return result;
+    }
+
+    cell_t N_SteamNetworkingUtils_GetPingToDataCenter(IPluginContext* ctx, const cell_t* params)
+    {
+        auto* steam = SteamNetworkingUtils_SteamAPI();
+        if (!steam)
+            return 0;
+        cell_t* c1 = nullptr; if (ctx->LocalToPhysAddr(params[2], &c1) != SP_ERROR_NONE) return 0; SteamNetworkingPOPID a1{};
+        const cell_t result = static_cast<cell_t>(steam->GetPingToDataCenter(static_cast<SteamNetworkingPOPID>(params[1]), &a1));
+        *c1 = static_cast<cell_t>(a1);
+        return result;
+    }
+
+    cell_t N_SteamNetworkingUtils_GetDirectPingToPOP(IPluginContext* ctx, const cell_t* params)
+    {
+        auto* steam = SteamNetworkingUtils_SteamAPI();
+        if (!steam)
+            return 0;
+        const cell_t result = static_cast<cell_t>(steam->GetDirectPingToPOP(static_cast<SteamNetworkingPOPID>(params[1])));
+
+        return result;
+    }
+
+    cell_t N_SteamNetworkingUtils_GetPOPCount(IPluginContext* ctx, const cell_t* params)
+    {
+        auto* steam = SteamNetworkingUtils_SteamAPI();
+        if (!steam)
+            return 0;
+        const cell_t result = static_cast<cell_t>(steam->GetPOPCount());
+
+        return result;
+    }
+
+    cell_t N_SteamNetworkingUtils_GetPOPList(IPluginContext* ctx, const cell_t* params)
+    {
+        auto* steam = SteamNetworkingUtils_SteamAPI();
+        if (!steam)
+            return 0;
+        cell_t* c0 = nullptr; if (ctx->LocalToPhysAddr(params[1], &c0) != SP_ERROR_NONE) return 0; SteamNetworkingPOPID a0{};
+        const cell_t result = static_cast<cell_t>(steam->GetPOPList(&a0, static_cast<int>(params[2])));
+        *c0 = static_cast<cell_t>(a0);
+        return result;
+    }
+
+    cell_t N_SteamNetworkingUtils_GetLocalTimestamp(IPluginContext* ctx, const cell_t* params)
+    {
+        auto* steam = SteamNetworkingUtils_SteamAPI();
+        if (!steam)
+            return 0;
+        const uint64 value = static_cast<uint64>(steam->GetLocalTimestamp());
+
+        return ToBuffer(ctx, params[1], params[2], std::to_string(value).c_str());
+    }
+
+    cell_t N_SteamNetworkingUtils_IsFakeIPv4(IPluginContext* ctx, const cell_t* params)
+    {
+        auto* steam = SteamNetworkingUtils_SteamAPI();
+        if (!steam)
+            return 0;
+        const cell_t result = steam->IsFakeIPv4(static_cast<uint32>(params[1])) ? 1 : 0;
+
+        return result;
+    }
+
+    cell_t N_SteamNetworkingUtils_GetIPv4FakeIPType(IPluginContext* ctx, const cell_t* params)
+    {
+        auto* steam = SteamNetworkingUtils_SteamAPI();
+        if (!steam)
+            return 0;
+        const cell_t result = static_cast<cell_t>(steam->GetIPv4FakeIPType(static_cast<uint32>(params[1])));
+
+        return result;
+    }
+
+    cell_t N_SteamNetworkingUtils_GetRealIdentityForFakeIP(IPluginContext* ctx, const cell_t* params)
+    {
+        auto* steam = SteamNetworkingUtils_SteamAPI();
+        if (!steam)
+            return 0;
+        SteamNetworkingIPAddr a0; a0.Clear(); a0.ParseString(Str(ctx, params[1]));
+        SteamNetworkingIdentity a1; a1.Clear();
+        const cell_t result = static_cast<cell_t>(steam->GetRealIdentityForFakeIP(a0, &a1));
+        { char text[128] = ""; a1.ToString(text, sizeof(text)); ToBuffer(ctx, params[2], params[3], text); }
+        return result;
+    }
+
+    cell_t N_SteamNetworkingUtils_SetGlobalConfigValueInt32(IPluginContext* ctx, const cell_t* params)
+    {
+        auto* steam = SteamNetworkingUtils_SteamAPI();
+        if (!steam)
+            return 0;
+        const cell_t result = steam->SetGlobalConfigValueInt32(static_cast<ESteamNetworkingConfigValue>(params[1]), static_cast<int32>(params[2])) ? 1 : 0;
+
+        return result;
+    }
+
+    cell_t N_SteamNetworkingUtils_SetGlobalConfigValueFloat(IPluginContext* ctx, const cell_t* params)
+    {
+        auto* steam = SteamNetworkingUtils_SteamAPI();
+        if (!steam)
+            return 0;
+        const cell_t result = steam->SetGlobalConfigValueFloat(static_cast<ESteamNetworkingConfigValue>(params[1]), static_cast<float>(sp_ctof(params[2]))) ? 1 : 0;
+
+        return result;
+    }
+
+    cell_t N_SteamNetworkingUtils_SetGlobalConfigValueString(IPluginContext* ctx, const cell_t* params)
+    {
+        auto* steam = SteamNetworkingUtils_SteamAPI();
+        if (!steam)
+            return 0;
+        const cell_t result = steam->SetGlobalConfigValueString(static_cast<ESteamNetworkingConfigValue>(params[1]), Str(ctx, params[2])) ? 1 : 0;
+
+        return result;
+    }
+
+    cell_t N_SteamNetworkingUtils_SetConnectionConfigValueInt32(IPluginContext* ctx, const cell_t* params)
+    {
+        auto* steam = SteamNetworkingUtils_SteamAPI();
+        if (!steam)
+            return 0;
+        const cell_t result = steam->SetConnectionConfigValueInt32(static_cast<HSteamNetConnection>(params[1]), static_cast<ESteamNetworkingConfigValue>(params[2]), static_cast<int32>(params[3])) ? 1 : 0;
+
+        return result;
+    }
+
+    cell_t N_SteamNetworkingUtils_SetConnectionConfigValueFloat(IPluginContext* ctx, const cell_t* params)
+    {
+        auto* steam = SteamNetworkingUtils_SteamAPI();
+        if (!steam)
+            return 0;
+        const cell_t result = steam->SetConnectionConfigValueFloat(static_cast<HSteamNetConnection>(params[1]), static_cast<ESteamNetworkingConfigValue>(params[2]), static_cast<float>(sp_ctof(params[3]))) ? 1 : 0;
+
+        return result;
+    }
+
+    cell_t N_SteamNetworkingUtils_SetConnectionConfigValueString(IPluginContext* ctx, const cell_t* params)
+    {
+        auto* steam = SteamNetworkingUtils_SteamAPI();
+        if (!steam)
+            return 0;
+        const cell_t result = steam->SetConnectionConfigValueString(static_cast<HSteamNetConnection>(params[1]), static_cast<ESteamNetworkingConfigValue>(params[2]), Str(ctx, params[3])) ? 1 : 0;
+
+        return result;
+    }
+
+    cell_t N_SteamNetworkingUtils_GetConfigValueInfo(IPluginContext* ctx, const cell_t* params)
+    {
+        auto* steam = SteamNetworkingUtils_SteamAPI();
+        if (!steam)
+            return 0;
+        cell_t* c1 = nullptr; if (ctx->LocalToPhysAddr(params[2], &c1) != SP_ERROR_NONE) return 0; ESteamNetworkingConfigDataType a1{};
+        cell_t* c2 = nullptr; if (ctx->LocalToPhysAddr(params[3], &c2) != SP_ERROR_NONE) return 0; ESteamNetworkingConfigScope a2{};
+        const char* value = steam->GetConfigValueInfo(static_cast<ESteamNetworkingConfigValue>(params[1]), &a1, &a2);
+        *c1 = static_cast<cell_t>(a1);
+        *c2 = static_cast<cell_t>(a2);
+        return ToBuffer(ctx, params[4], params[5], value);
+    }
+
+    cell_t N_SteamNetworkingUtils_IterateGenericEditableConfigValues(IPluginContext* ctx, const cell_t* params)
+    {
+        auto* steam = SteamNetworkingUtils_SteamAPI();
+        if (!steam)
+            return 0;
+        const cell_t result = static_cast<cell_t>(steam->IterateGenericEditableConfigValues(static_cast<ESteamNetworkingConfigValue>(params[1]), params[2] != 0));
+
+        return result;
+    }
+
+    cell_t N_SteamNetworkingUtils_SteamNetworkingIPAddr_ToString(IPluginContext* ctx, const cell_t* params)
+    {
+        auto* steam = SteamNetworkingUtils_SteamAPI();
+        if (!steam)
+            return 0;
+        SteamNetworkingIPAddr a0; a0.Clear(); a0.ParseString(Str(ctx, params[1]));
+        char* a1 = nullptr; if (ctx->LocalToString(params[2], &a1) != SP_ERROR_NONE) return 0;
+        steam->SteamNetworkingIPAddr_ToString(a0, a1, static_cast<uint32>(params[3]), params[4] != 0);
+
+        return 0;
+    }
+
+    cell_t N_SteamNetworkingUtils_SteamNetworkingIPAddr_ParseString(IPluginContext* ctx, const cell_t* params)
+    {
+        auto* steam = SteamNetworkingUtils_SteamAPI();
+        if (!steam)
+            return 0;
+        SteamNetworkingIPAddr a0; a0.Clear();
+        const cell_t result = steam->SteamNetworkingIPAddr_ParseString(&a0, Str(ctx, params[3])) ? 1 : 0;
+        { char text[128] = ""; a0.ToString(text, sizeof(text), true); ToBuffer(ctx, params[1], params[2], text); }
+        return result;
+    }
+
+    cell_t N_SteamNetworkingUtils_SteamNetworkingIPAddr_GetFakeIPType(IPluginContext* ctx, const cell_t* params)
+    {
+        auto* steam = SteamNetworkingUtils_SteamAPI();
+        if (!steam)
+            return 0;
+        SteamNetworkingIPAddr a0; a0.Clear(); a0.ParseString(Str(ctx, params[1]));
+        const cell_t result = static_cast<cell_t>(steam->SteamNetworkingIPAddr_GetFakeIPType(a0));
+
+        return result;
+    }
+
+    cell_t N_SteamNetworkingUtils_SteamNetworkingIdentity_ToString(IPluginContext* ctx, const cell_t* params)
+    {
+        auto* steam = SteamNetworkingUtils_SteamAPI();
+        if (!steam)
+            return 0;
+        SteamNetworkingIdentity a0; a0.Clear(); a0.ParseString(Str(ctx, params[1]));
+        char* a1 = nullptr; if (ctx->LocalToString(params[2], &a1) != SP_ERROR_NONE) return 0;
+        steam->SteamNetworkingIdentity_ToString(a0, a1, static_cast<uint32>(params[3]));
+
+        return 0;
+    }
+
+    cell_t N_SteamNetworkingUtils_SteamNetworkingIdentity_ParseString(IPluginContext* ctx, const cell_t* params)
+    {
+        auto* steam = SteamNetworkingUtils_SteamAPI();
+        if (!steam)
+            return 0;
+        SteamNetworkingIdentity a0; a0.Clear();
+        const cell_t result = steam->SteamNetworkingIdentity_ParseString(&a0, Str(ctx, params[3])) ? 1 : 0;
+        { char text[128] = ""; a0.ToString(text, sizeof(text)); ToBuffer(ctx, params[1], params[2], text); }
         return result;
     }
 
@@ -2378,6 +3270,16 @@ namespace
         return Track<GSReputation_t>(ctx, call, params[1], params[2], Push_GSReputation_t);
     }
 
+    cell_t N_SteamGameServer_GetPublicIP(IPluginContext* ctx, const cell_t* params)
+    {
+        auto* steam = SteamGameServer();
+        if (!steam)
+            return 0;
+        const cell_t result = static_cast<cell_t>(steam->GetPublicIP().m_unIPv4);
+
+        return result;
+    }
+
     void Push_AssociateWithClanResult_t(IPluginFunction* fn, AssociateWithClanResult_t* p)
     {
             fn->PushCell(static_cast<cell_t>(p->m_eResult));
@@ -2547,6 +3449,7 @@ namespace
         { "SteamUtils.CheckFileSignature", N_SteamUtils_CheckFileSignature },
         { "SteamUtils.ShowGamepadTextInput", N_SteamUtils_ShowGamepadTextInput },
         { "SteamUtils.GetEnteredGamepadTextLength", N_SteamUtils_GetEnteredGamepadTextLength },
+        { "SteamUtils.GetEnteredGamepadTextInput", N_SteamUtils_GetEnteredGamepadTextInput },
         { "SteamUtils.GetSteamUILanguage", N_SteamUtils_GetSteamUILanguage },
         { "SteamUtils.IsSteamRunningInVR", N_SteamUtils_IsSteamRunningInVR },
         { "SteamUtils.SetOverlayNotificationInset", N_SteamUtils_SetOverlayNotificationInset },
@@ -2556,6 +3459,7 @@ namespace
         { "SteamUtils.SetVRHeadsetStreamingEnabled", N_SteamUtils_SetVRHeadsetStreamingEnabled },
         { "SteamUtils.IsSteamChinaLauncher", N_SteamUtils_IsSteamChinaLauncher },
         { "SteamUtils.InitFilterText", N_SteamUtils_InitFilterText },
+        { "SteamUtils.FilterText", N_SteamUtils_FilterText },
         { "SteamUtils.GetIPv6ConnectivityState", N_SteamUtils_GetIPv6ConnectivityState },
         { "SteamUtils.IsSteamRunningOnSteamDeck", N_SteamUtils_IsSteamRunningOnSteamDeck },
         { "SteamUtils.ShowFloatingGamepadTextInput", N_SteamUtils_ShowFloatingGamepadTextInput },
@@ -2568,8 +3472,11 @@ namespace
         { "SteamNetworking.AcceptP2PSessionWithUser", N_SteamNetworking_AcceptP2PSessionWithUser },
         { "SteamNetworking.CloseP2PSessionWithUser", N_SteamNetworking_CloseP2PSessionWithUser },
         { "SteamNetworking.CloseP2PChannelWithUser", N_SteamNetworking_CloseP2PChannelWithUser },
+        { "SteamNetworking.GetP2PSessionState", N_SteamNetworking_GetP2PSessionState },
         { "SteamNetworking.AllowP2PPacketRelay", N_SteamNetworking_AllowP2PPacketRelay },
+        { "SteamNetworking.CreateListenSocket", N_SteamNetworking_CreateListenSocket },
         { "SteamNetworking.CreateP2PConnectionSocket", N_SteamNetworking_CreateP2PConnectionSocket },
+        { "SteamNetworking.CreateConnectionSocket", N_SteamNetworking_CreateConnectionSocket },
         { "SteamNetworking.DestroySocket", N_SteamNetworking_DestroySocket },
         { "SteamNetworking.DestroyListenSocket", N_SteamNetworking_DestroyListenSocket },
         { "SteamNetworking.SendDataOnSocket", N_SteamNetworking_SendDataOnSocket },
@@ -2577,13 +3484,41 @@ namespace
         { "SteamNetworking.RetrieveDataFromSocket", N_SteamNetworking_RetrieveDataFromSocket },
         { "SteamNetworking.IsDataAvailable", N_SteamNetworking_IsDataAvailable },
         { "SteamNetworking.RetrieveData", N_SteamNetworking_RetrieveData },
+        { "SteamNetworking.GetSocketInfo", N_SteamNetworking_GetSocketInfo },
+        { "SteamNetworking.GetListenSocketInfo", N_SteamNetworking_GetListenSocketInfo },
         { "SteamNetworking.GetSocketConnectionType", N_SteamNetworking_GetSocketConnectionType },
         { "SteamNetworking.GetMaxPacketSize", N_SteamNetworking_GetMaxPacketSize },
+        { "SteamHTTP.CreateHTTPRequest", N_SteamHTTP_CreateHTTPRequest },
+        { "SteamHTTP.SetHTTPRequestContextValue", N_SteamHTTP_SetHTTPRequestContextValue },
+        { "SteamHTTP.SetHTTPRequestNetworkActivityTimeout", N_SteamHTTP_SetHTTPRequestNetworkActivityTimeout },
+        { "SteamHTTP.SetHTTPRequestHeaderValue", N_SteamHTTP_SetHTTPRequestHeaderValue },
+        { "SteamHTTP.SetHTTPRequestGetOrPostParameter", N_SteamHTTP_SetHTTPRequestGetOrPostParameter },
+        { "SteamHTTP.SendHTTPRequest", N_SteamHTTP_SendHTTPRequest },
+        { "SteamHTTP.SendHTTPRequestAndStreamResponse", N_SteamHTTP_SendHTTPRequestAndStreamResponse },
+        { "SteamHTTP.DeferHTTPRequest", N_SteamHTTP_DeferHTTPRequest },
+        { "SteamHTTP.PrioritizeHTTPRequest", N_SteamHTTP_PrioritizeHTTPRequest },
+        { "SteamHTTP.GetHTTPResponseHeaderSize", N_SteamHTTP_GetHTTPResponseHeaderSize },
+        { "SteamHTTP.GetHTTPResponseHeaderValue", N_SteamHTTP_GetHTTPResponseHeaderValue },
+        { "SteamHTTP.GetHTTPResponseBodySize", N_SteamHTTP_GetHTTPResponseBodySize },
+        { "SteamHTTP.GetHTTPResponseBodyData", N_SteamHTTP_GetHTTPResponseBodyData },
+        { "SteamHTTP.GetHTTPStreamingResponseBodyData", N_SteamHTTP_GetHTTPStreamingResponseBodyData },
+        { "SteamHTTP.ReleaseHTTPRequest", N_SteamHTTP_ReleaseHTTPRequest },
+        { "SteamHTTP.GetHTTPDownloadProgressPct", N_SteamHTTP_GetHTTPDownloadProgressPct },
+        { "SteamHTTP.SetHTTPRequestRawPostBody", N_SteamHTTP_SetHTTPRequestRawPostBody },
+        { "SteamHTTP.CreateCookieContainer", N_SteamHTTP_CreateCookieContainer },
+        { "SteamHTTP.ReleaseCookieContainer", N_SteamHTTP_ReleaseCookieContainer },
+        { "SteamHTTP.SetCookie", N_SteamHTTP_SetCookie },
+        { "SteamHTTP.SetHTTPRequestCookieContainer", N_SteamHTTP_SetHTTPRequestCookieContainer },
+        { "SteamHTTP.SetHTTPRequestUserAgentInfo", N_SteamHTTP_SetHTTPRequestUserAgentInfo },
+        { "SteamHTTP.SetHTTPRequestRequiresVerifiedCertificate", N_SteamHTTP_SetHTTPRequestRequiresVerifiedCertificate },
+        { "SteamHTTP.SetHTTPRequestAbsoluteTimeoutMS", N_SteamHTTP_SetHTTPRequestAbsoluteTimeoutMS },
+        { "SteamHTTP.GetHTTPRequestWasTimedOut", N_SteamHTTP_GetHTTPRequestWasTimedOut },
         { "SteamUGC.CreateQueryUserUGCRequest", N_SteamUGC_CreateQueryUserUGCRequest },
         { "SteamUGC.CreateQueryAllUGCRequestPage", N_SteamUGC_CreateQueryAllUGCRequestPage },
         { "SteamUGC.CreateQueryAllUGCRequestCursor", N_SteamUGC_CreateQueryAllUGCRequestCursor },
         { "SteamUGC.CreateQueryUGCDetailsRequest", N_SteamUGC_CreateQueryUGCDetailsRequest },
         { "SteamUGC.SendQueryUGCRequest", N_SteamUGC_SendQueryUGCRequest },
+        { "SteamUGC.GetQueryUGCResult", N_SteamUGC_GetQueryUGCResult },
         { "SteamUGC.GetQueryUGCNumTags", N_SteamUGC_GetQueryUGCNumTags },
         { "SteamUGC.GetQueryUGCTag", N_SteamUGC_GetQueryUGCTag },
         { "SteamUGC.GetQueryUGCTagDisplayName", N_SteamUGC_GetQueryUGCTagDisplayName },
@@ -2679,8 +3614,10 @@ namespace
         { "SteamInventory.DestroyResult", N_SteamInventory_DestroyResult },
         { "SteamInventory.GetAllItems", N_SteamInventory_GetAllItems },
         { "SteamInventory.DeserializeResult", N_SteamInventory_DeserializeResult },
+        { "SteamInventory.GenerateItems", N_SteamInventory_GenerateItems },
         { "SteamInventory.GrantPromoItems", N_SteamInventory_GrantPromoItems },
         { "SteamInventory.AddPromoItem", N_SteamInventory_AddPromoItem },
+        { "SteamInventory.AddPromoItems", N_SteamInventory_AddPromoItems },
         { "SteamInventory.ConsumeItem", N_SteamInventory_ConsumeItem },
         { "SteamInventory.TransferItemQuantity", N_SteamInventory_TransferItemQuantity },
         { "SteamInventory.SendItemDropHeartbeat", N_SteamInventory_SendItemDropHeartbeat },
@@ -2688,6 +3625,7 @@ namespace
         { "SteamInventory.LoadItemDefinitions", N_SteamInventory_LoadItemDefinitions },
         { "SteamInventory.GetItemDefinitionProperty", N_SteamInventory_GetItemDefinitionProperty },
         { "SteamInventory.RequestEligiblePromoItemDefinitionsIDs", N_SteamInventory_RequestEligiblePromoItemDefinitionsIDs },
+        { "SteamInventory.StartPurchase", N_SteamInventory_StartPurchase },
         { "SteamInventory.RequestPrices", N_SteamInventory_RequestPrices },
         { "SteamInventory.GetNumItemsWithPrices", N_SteamInventory_GetNumItemsWithPrices },
         { "SteamInventory.GetItemPrice", N_SteamInventory_GetItemPrice },
@@ -2699,21 +3637,59 @@ namespace
         { "SteamInventory.SetPropertyFloat", N_SteamInventory_SetPropertyFloat },
         { "SteamInventory.SubmitUpdateProperties", N_SteamInventory_SubmitUpdateProperties },
         { "SteamInventory.InspectItem", N_SteamInventory_InspectItem },
+        { "SteamNetworkingMessages.SendMessageToUser", N_SteamNetworkingMessages_SendMessageToUser },
+        { "SteamNetworkingMessages.AcceptSessionWithUser", N_SteamNetworkingMessages_AcceptSessionWithUser },
+        { "SteamNetworkingMessages.CloseSessionWithUser", N_SteamNetworkingMessages_CloseSessionWithUser },
+        { "SteamNetworkingMessages.CloseChannelWithUser", N_SteamNetworkingMessages_CloseChannelWithUser },
         { "SteamNetworkingSockets.AcceptConnection", N_SteamNetworkingSockets_AcceptConnection },
         { "SteamNetworkingSockets.CloseConnection", N_SteamNetworkingSockets_CloseConnection },
         { "SteamNetworkingSockets.CloseListenSocket", N_SteamNetworkingSockets_CloseListenSocket },
         { "SteamNetworkingSockets.SetConnectionUserData", N_SteamNetworkingSockets_SetConnectionUserData },
         { "SteamNetworkingSockets.GetConnectionUserData", N_SteamNetworkingSockets_GetConnectionUserData },
         { "SteamNetworkingSockets.SetConnectionName", N_SteamNetworkingSockets_SetConnectionName },
+        { "SteamNetworkingSockets.GetConnectionName", N_SteamNetworkingSockets_GetConnectionName },
         { "SteamNetworkingSockets.SendMessageToConnection", N_SteamNetworkingSockets_SendMessageToConnection },
         { "SteamNetworkingSockets.FlushMessagesOnConnection", N_SteamNetworkingSockets_FlushMessagesOnConnection },
+        { "SteamNetworkingSockets.GetConnectionInfo", N_SteamNetworkingSockets_GetConnectionInfo },
+        { "SteamNetworkingSockets.GetDetailedConnectionStatus", N_SteamNetworkingSockets_GetDetailedConnectionStatus },
+        { "SteamNetworkingSockets.GetListenSocketAddress", N_SteamNetworkingSockets_GetListenSocketAddress },
+        { "SteamNetworkingSockets.CreateSocketPair", N_SteamNetworkingSockets_CreateSocketPair },
+        { "SteamNetworkingSockets.GetIdentity", N_SteamNetworkingSockets_GetIdentity },
         { "SteamNetworkingSockets.InitAuthentication", N_SteamNetworkingSockets_InitAuthentication },
+        { "SteamNetworkingSockets.GetAuthenticationStatus", N_SteamNetworkingSockets_GetAuthenticationStatus },
         { "SteamNetworkingSockets.CreatePollGroup", N_SteamNetworkingSockets_CreatePollGroup },
         { "SteamNetworkingSockets.DestroyPollGroup", N_SteamNetworkingSockets_DestroyPollGroup },
         { "SteamNetworkingSockets.SetConnectionPollGroup", N_SteamNetworkingSockets_SetConnectionPollGroup },
         { "SteamNetworkingSockets.GetHostedDedicatedServerPort", N_SteamNetworkingSockets_GetHostedDedicatedServerPort },
         { "SteamNetworkingSockets.GetHostedDedicatedServerPOPID", N_SteamNetworkingSockets_GetHostedDedicatedServerPOPID },
+        { "SteamNetworkingSockets.ResetIdentity", N_SteamNetworkingSockets_ResetIdentity },
         { "SteamNetworkingSockets.BeginAsyncRequestFakeIP", N_SteamNetworkingSockets_BeginAsyncRequestFakeIP },
+        { "SteamNetworkingSockets.GetFakeIP", N_SteamNetworkingSockets_GetFakeIP },
+        { "SteamNetworkingSockets.GetRemoteFakeIPForConnection", N_SteamNetworkingSockets_GetRemoteFakeIPForConnection },
+        { "SteamNetworkingUtils.InitRelayNetworkAccess", N_SteamNetworkingUtils_InitRelayNetworkAccess },
+        { "SteamNetworkingUtils.GetRelayNetworkStatus", N_SteamNetworkingUtils_GetRelayNetworkStatus },
+        { "SteamNetworkingUtils.CheckPingDataUpToDate", N_SteamNetworkingUtils_CheckPingDataUpToDate },
+        { "SteamNetworkingUtils.GetPingToDataCenter", N_SteamNetworkingUtils_GetPingToDataCenter },
+        { "SteamNetworkingUtils.GetDirectPingToPOP", N_SteamNetworkingUtils_GetDirectPingToPOP },
+        { "SteamNetworkingUtils.GetPOPCount", N_SteamNetworkingUtils_GetPOPCount },
+        { "SteamNetworkingUtils.GetPOPList", N_SteamNetworkingUtils_GetPOPList },
+        { "SteamNetworkingUtils.GetLocalTimestamp", N_SteamNetworkingUtils_GetLocalTimestamp },
+        { "SteamNetworkingUtils.IsFakeIPv4", N_SteamNetworkingUtils_IsFakeIPv4 },
+        { "SteamNetworkingUtils.GetIPv4FakeIPType", N_SteamNetworkingUtils_GetIPv4FakeIPType },
+        { "SteamNetworkingUtils.GetRealIdentityForFakeIP", N_SteamNetworkingUtils_GetRealIdentityForFakeIP },
+        { "SteamNetworkingUtils.SetGlobalConfigValueInt32", N_SteamNetworkingUtils_SetGlobalConfigValueInt32 },
+        { "SteamNetworkingUtils.SetGlobalConfigValueFloat", N_SteamNetworkingUtils_SetGlobalConfigValueFloat },
+        { "SteamNetworkingUtils.SetGlobalConfigValueString", N_SteamNetworkingUtils_SetGlobalConfigValueString },
+        { "SteamNetworkingUtils.SetConnectionConfigValueInt32", N_SteamNetworkingUtils_SetConnectionConfigValueInt32 },
+        { "SteamNetworkingUtils.SetConnectionConfigValueFloat", N_SteamNetworkingUtils_SetConnectionConfigValueFloat },
+        { "SteamNetworkingUtils.SetConnectionConfigValueString", N_SteamNetworkingUtils_SetConnectionConfigValueString },
+        { "SteamNetworkingUtils.GetConfigValueInfo", N_SteamNetworkingUtils_GetConfigValueInfo },
+        { "SteamNetworkingUtils.IterateGenericEditableConfigValues", N_SteamNetworkingUtils_IterateGenericEditableConfigValues },
+        { "SteamNetworkingUtils.SteamNetworkingIPAddr_ToString", N_SteamNetworkingUtils_SteamNetworkingIPAddr_ToString },
+        { "SteamNetworkingUtils.SteamNetworkingIPAddr_ParseString", N_SteamNetworkingUtils_SteamNetworkingIPAddr_ParseString },
+        { "SteamNetworkingUtils.SteamNetworkingIPAddr_GetFakeIPType", N_SteamNetworkingUtils_SteamNetworkingIPAddr_GetFakeIPType },
+        { "SteamNetworkingUtils.SteamNetworkingIdentity_ToString", N_SteamNetworkingUtils_SteamNetworkingIdentity_ToString },
+        { "SteamNetworkingUtils.SteamNetworkingIdentity_ParseString", N_SteamNetworkingUtils_SteamNetworkingIdentity_ParseString },
         { "SteamGameServer.SetGameDescription", N_SteamGameServer_SetGameDescription },
         { "SteamGameServer.BLoggedOn", N_SteamGameServer_BLoggedOn },
         { "SteamGameServer.BSecure", N_SteamGameServer_BSecure },
@@ -2735,6 +3711,7 @@ namespace
         { "SteamGameServer.RequestUserGroupStatus", N_SteamGameServer_RequestUserGroupStatus },
         { "SteamGameServer.GetGameplayStats", N_SteamGameServer_GetGameplayStats },
         { "SteamGameServer.GetServerReputation", N_SteamGameServer_GetServerReputation },
+        { "SteamGameServer.GetPublicIP", N_SteamGameServer_GetPublicIP },
         { "SteamGameServer.AssociateWithClan", N_SteamGameServer_AssociateWithClan },
         { "SteamGameServer.ComputeNewPlayerCompatibility", N_SteamGameServer_ComputeNewPlayerCompatibility },
         { "SteamGameServerStats.RequestUserStats", N_SteamGameServerStats_RequestUserStats },

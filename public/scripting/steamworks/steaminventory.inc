@@ -37,11 +37,16 @@ methodmap SteamInventory
 	/** Deserializes a result set and verifies the signature bytes. Returns false if bRequireFullOnlineVerify is set but Steam is running in Offline mode. Otherwise returns true and then delivers error codes via GetResultStatus. The bRESERVED_MUST_BE_FALSE flag is reserved for future use and should not be set to true by your game at this time. DeserializeResult has a potential soft-failure mode where the handle status is set to k_EResultExpired. GetResultItems() still succeeds in this mode. The "expired" result could indicate that the data may be out of date - not just due to timed expiration (one hour), but also because one of the items in the result set may have been traded or consumed since the result set was generated. You could compare the timestamp from GetResultTimestamp() to ISteamUtils::GetServerRealTime() to determine how old the data is. You could simply ignore the "expired" result code and continue as normal, or you could challenge the player with expired data to send an updated result set. */
 	public static native bool DeserializeResult(int &pOutResultHandle, const char[] pBuffer, int unBufferSize, bool bRESERVED_MUST_BE_FALSE);
 
+	/** GenerateItems() creates one or more items and then generates a SteamInventoryCallback_t notification with a matching nCallbackContext parameter. This API is only intended for prototyping - it is only usable by Steam accounts that belong to the publisher group for your game. If punArrayQuantity is not NULL, it should be the same length as pArrayItems and should describe the quantity of each item to generate. */
+	public static native bool GenerateItems(int &pResultHandle, const int[] pArrayItemDefs, const int[] punArrayQuantity, int unArrayLength);
+
 	/** GrantPromoItems() checks the list of promotional items for which the user may be eligible and grants the items (one time only).  On success, the result set will include items which were granted, if any. If no items were granted because the user isn't eligible for any promotions, this is still considered a success. */
 	public static native bool GrantPromoItems(int &pResultHandle);
 
 	/** AddPromoItem() / AddPromoItems() are restricted versions of GrantPromoItems(). Instead of scanning for all eligible promotional items, the check is restricted to a single item definition or set of item definitions. This can be useful if your game has custom UI for showing a specific promo item to the user. */
 	public static native bool AddPromoItem(int &pResultHandle, int itemDef);
+
+	public static native bool AddPromoItems(int &pResultHandle, const int[] pArrayItemDefs, int unArrayLength);
 
 	/** ConsumeItem() removes items from the inventory, permanently. They cannot be recovered. Not for the faint of heart - if your game implements item removal at all, a high-friction UI confirmation process is highly recommended. */
 	public static native bool ConsumeItem(int &pResultHandle, const char[] itemConsume, int unQuantity);
@@ -63,6 +68,9 @@ methodmap SteamInventory
 
 	/** Request the list of "eligible" promo items that can be manually granted to the given user.  These are promo items of type "manual" that won't be granted automatically. An example usage of this is an item that becomes available every week. */
 	public static native bool RequestEligiblePromoItemDefinitionsIDs(const char[] steamID, SteamInventoryEligiblePromoItemDefIDs_tCallback callback, any data = 0);
+
+	/** Starts the purchase process for the given item definitions.  The callback SteamInventoryStartPurchaseResult_t will be posted if Steam was able to initialize the transaction. Once the purchase has been authorized and completed by the user, the callback SteamInventoryResultReady_t will be posted. */
+	public static native bool StartPurchase(const int[] pArrayItemDefs, const int[] punArrayQuantity, int unArrayLength, SteamInventoryStartPurchaseResult_tCallback callback, any data = 0);
 
 	/** Request current prices for all applicable item definitions */
 	public static native bool RequestPrices(SteamInventoryRequestPricesResult_tCallback callback, any data = 0);

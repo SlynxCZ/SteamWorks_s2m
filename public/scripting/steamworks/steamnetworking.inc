@@ -34,11 +34,19 @@ methodmap SteamNetworking
 	/** call CloseP2PChannelWithUser() when you're done talking to a user on a specific channel. Once all channels open channels to a user have been closed, the open session to the user will be closed and new data from this user will trigger a P2PSessionRequest_t callback */
 	public static native bool CloseP2PChannelWithUser(const char[] steamIDRemote, int nChannel);
 
+	/** fills out P2PSessionState_t structure with details about the underlying connection to the user should only needed for debugging purposes returns false if no connection exists to the specified user */
+	public static native bool GetP2PSessionState(const char[] steamIDRemote, P2PSessionState_tCallback callback, any data = 0);
+
 	/** Allow P2P connections to fall back to being relayed through the Steam servers if a direct connection or NAT-traversal cannot be established. Only applies to connections created after setting this value, or to existing connections that need to automatically reconnect after this value is set. P2P packet relay is allowed by default NOTE: This function is deprecated and may be removed in a future version of the SDK.  For security purposes, we may decide to relay the traffic to certain peers, even if you pass false to this function, to prevent revealing the client's IP address top another peer. */
 	public static native bool AllowP2PPacketRelay(bool bAllow);
 
+	/** creates a socket and listens others to connect will trigger a SocketStatusCallback_t callback on another client connecting nVirtualP2PPort is the unique ID that the client will connect to, in case you have multiple ports this can usually just be 0 unless you want multiple sets of connections unIP is the local IP address to bind to pass in 0 if you just want the default local IP unPort is the port to use pass in 0 if you don't want users to be able to connect via IP/Port, but expect to be always peer-to-peer connections only */
+	public static native int CreateListenSocket(int nVirtualP2PPort, int nIP, int nPort, bool bAllowUseOfPacketRelay);
+
 	/** creates a socket and begin connection to a remote destination can connect via a known steamID (client or game server), or directly to an IP on success will trigger a SocketStatusCallback_t callback on failure or timeout will trigger a SocketStatusCallback_t callback with a failure code in m_eSNetSocketState */
 	public static native int CreateP2PConnectionSocket(const char[] steamIDTarget, int nVirtualPort, int nTimeoutSec, bool bAllowUseOfPacketRelay);
+
+	public static native int CreateConnectionSocket(int nIP, int nPort, int nTimeoutSec);
 
 	/** disconnects the connection to the socket, if any, and invalidates the handle any unread data on the socket will be thrown away if bNotifyRemoteEnd is set, socket will not be completely destroyed until the remote end acknowledges the disconnect */
 	public static native bool DestroySocket(int hSocket, bool bNotifyRemoteEnd);
@@ -60,6 +68,12 @@ methodmap SteamNetworking
 
 	/** retrieves data from any socket that has been connected off this listen socket fills in pubDest with the contents of the message messages are always complete, of the same size as was sent (i.e. packetized, not streaming) if *pcubMsgSize < cubDest, only partial data is written returns false if no data is available fills out *phSocket with the socket that data is available on */
 	public static native bool RetrieveData(int hListenSocket, char[] pubDest, int cubDest, int &pcubMsgSize, int &phSocket);
+
+	/** returns information about the specified socket, filling out the contents of the pointers */
+	public static native bool GetSocketInfo(int hSocket, char[] pSteamIDRemote, int pSteamIDRemoteLength, int &peSocketStatus, int &punIPRemote, int &punPortRemote);
+
+	/** returns which local port the listen socket is bound to *pnIP and *pnPort will be 0 if the socket is set to listen for P2P connections only */
+	public static native bool GetListenSocketInfo(int hListenSocket, int &pnIP, int &pnPort);
 
 	/** returns true to describe how the socket ended up connecting */
 	public static native int GetSocketConnectionType(int hSocket);

@@ -31,6 +31,9 @@ methodmap SteamUGC
 	/** Send the query to Steam */
 	public static native bool SendQueryUGCRequest(const char[] handle, SteamUGCQueryCompleted_tCallback callback, any data = 0);
 
+	/** Retrieve an individual result after receiving the callback for querying UGC */
+	public static native bool GetQueryUGCResult(const char[] handle, int index, SteamUGCDetails_tCallback callback, any data = 0);
+
 	public static native int GetQueryUGCNumTags(const char[] handle, int index);
 
 	public static native bool GetQueryUGCTag(const char[] handle, int index, int indexTag, char[] pchValue, int cchValueSize);

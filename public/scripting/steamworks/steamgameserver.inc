@@ -76,6 +76,9 @@ methodmap SteamGameServer
 
 	public static native bool GetServerReputation(GSReputation_tCallback callback, any data = 0);
 
+	/** Returns the public IP of the server according to Steam, useful when the server is behind NAT and you want to advertise its IP in a lobby for other clients to directly connect to */
+	public static native int GetPublicIP();
+
 	/** associate this game server with this clan for the purposes of computing player compat */
 	public static native bool AssociateWithClan(const char[] steamIDClan, AssociateWithClanResult_tCallback callback, any data = 0);
 

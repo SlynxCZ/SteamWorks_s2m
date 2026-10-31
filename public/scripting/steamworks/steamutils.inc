@@ -70,6 +70,8 @@ methodmap SteamUtils
 	/** Returns previously entered text & length */
 	public static native int GetEnteredGamepadTextLength();
 
+	public static native bool GetEnteredGamepadTextInput(char[] pchText, int cchText);
+
 	/** returns the language the steam client is running in, you probably want ISteamApps::GetCurrentGameLanguage instead, this is for very special usage cases */
 	public static native int GetSteamUILanguage(char[] result, int resultLength);
 
@@ -96,6 +98,9 @@ methodmap SteamUtils
 
 	/** Initializes text filtering, loading dictionaries for the language the game is running in. unFilterOptions are reserved for future use and should be set to 0 Returns false if filtering is unavailable for the game's language, in which case FilterText() will act as a passthrough. Users can customize the text filter behavior in their Steam Account preferences: https://store.steampowered.com/account/preferences#CommunityContentPreferences */
 	public static native bool InitFilterText(int unFilterOptions);
+
+	/** Filters the provided input message and places the filtered result into pchOutFilteredText, using legally required filtering and additional filtering based on the context and user settings eContext is the type of content in the input string sourceSteamID is the Steam ID that is the source of the input string (e.g. the player with the name, or who said the chat text) pchInputText is the input string that should be filtered, which can be ASCII or UTF-8 pchOutFilteredText is where the output will be placed, even if no filtering is performed nByteSizeOutFilteredText is the size (in bytes) of pchOutFilteredText, should be at least strlen(pchInputText)+1 Returns the number of characters (not bytes) filtered */
+	public static native int FilterText(int eContext, const char[] sourceSteamID, const char[] pchInputMessage, char[] pchOutFilteredText, int nByteSizeOutFilteredText);
 
 	/** Return what we believe your current ipv6 connectivity to "the internet" is on the specified protocol. This does NOT tell you if the Steam client is currently connected to Steam via ipv6. */
 	public static native int GetIPv6ConnectivityState(int eProtocol);

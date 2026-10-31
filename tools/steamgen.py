@@ -17,23 +17,27 @@ import os
 import re
 import sys
 
-INTERFACES = {
-    "ISteamGameServer": ("SteamGameServer", "SteamGameServer"),
-    "ISteamGameServerStats": ("SteamGameServerStats", "SteamGameServerStats"),
-    "ISteamUtils": ("SteamUtils", "SteamGameServerUtils"),
-    "ISteamUGC": ("SteamUGC", "SteamGameServerUGC"),
-    "ISteamInventory": ("SteamInventory", "SteamGameServerInventory"),
-    "ISteamNetworking": ("SteamNetworking", "SteamGameServerNetworking"),
-    "ISteamNetworkingSockets": ("SteamNetworkingSockets", "SteamGameServerNetworkingSockets_SteamAPI"),
-    "ISteamNetworkingMessages": ("SteamNetworkingMessages", "SteamGameServerNetworkingMessages_SteamAPI"),
-}
+# Every interface the server can reach: a gameserver or a global accessor. A client-only
+# one (ISteamFriends, ISteamApps, ...) has neither and answers nothing on a dedicated server.
+# ISteamClient hands out raw interfaces: the methodmaps are what it would give.
+SKIPPED_INTERFACES = {"ISteamClient"}
+
+
+def server_accessor(iface):
+    accessors = iface.get("accessors", [])
+    for kind in ("gameserver", "global"):
+        for a in accessors:
+            if a["kind"] == kind:
+                return a["name"]
+    return None
+
 
 # The server's own session and identity are the engine's: a script calling these breaks the server.
 EXCLUDED = {
     "LogOn", "LogOnAnonymous", "LogOff", "SetDedicatedServer", "SetProduct", "SetModDir", "SetSpectatorPort",
     "BeginAuthSession", "EndAuthSession", "CancelAuthTicket", "GetAuthSessionTicket", "RunCallbacks", "RunFrame",
     "SendUserConnectAndAuthenticate_DEPRECATED", "CreateUnauthenticatedUserConnection", "SendUserDisconnect_DEPRECATED",
-    "HandleIncomingPacket", "GetNextOutgoingPacket", "BUpdateUserData",
+    "HandleIncomingPacket", "GetNextOutgoingPacket", "BUpdateUserData", "GetHostedDedicatedServerAddress",
 }
 
 RESERVED = {"in", "out", "forward", "function", "public", "native", "any", "this", "char", "int", "float", "bool", "new", "delete", "view_as"}
@@ -43,6 +47,8 @@ class Types:
     def __init__(self, api):
         self.typedefs = {t["typedef"]: t["type"] for t in api["typedefs"]}
         self.enums = {e["enumname"] for e in api["enums"]}
+        self.structs = {x["struct"]: x for x in api["structs"]}
+        self.structs.update({x["struct"]: x for x in api["callback_structs"]})
         for i in api["interfaces"]:
             for e in i.get("enums", []):
                 self.enums.add(e["enumname"])
@@ -86,6 +92,9 @@ class Method:
         self.args = []      # C++ arguments
         self.after = []     # C++ after the call
         self.index = 1      # the next params[] slot
+        self.counts = []    # const arrays: (param, its size's param, element, variable)
+        self.struct = None  # an output struct, handed to a callback
+        self.structvar = None
 
 
 def build(m, types):
@@ -119,6 +128,41 @@ def build(m, types):
             out.sp.append("const char[] %s" % name)
             out.args.append("CSteamID(static_cast<uint64>(U64(ctx, params[%d])))" % i)
             out.index += 1
+        elif t in ("const SteamNetworkingIdentity &", "const SteamNetworkingIdentity *", "const SteamNetworkingIPAddr &", "const SteamNetworkingIPAddr *"):
+            base = t.split()[1]
+            out.sp.append("const char[] %s" % name)
+            out.setup.append("%s %s; %s.Clear(); %s.ParseString(Str(ctx, params[%d]));" % (base, var, var, var, i))
+            out.args.append(var if t.endswith("&") else "&" + var)
+            out.index += 1
+        elif t in ("SteamNetworkingIdentity *", "SteamNetworkingIPAddr *"):
+            base = t.split()[0]
+            out.sp += ["char[] %s" % name, "int %sLength" % p["paramname"]]
+            out.setup.append("%s %s; %s.Clear();" % (base, var, var))
+            out.args.append("&" + var)
+            tail = ", true" if base == "SteamNetworkingIPAddr" else ""
+            out.after.append("{ char text[128] = \"\"; %s.ToString(text, sizeof(text)%s); ToBuffer(ctx, params[%d], params[%d], text); }" % (var, tail, i, i + 1))
+            out.index += 2
+        elif t == "SteamIPAddress_t":
+            out.sp.append("int %s" % name)
+            out.setup.append("SteamIPAddress_t %s{}; %s.m_eType = k_ESteamIPTypeIPv4; %s.m_unIPv4 = static_cast<uint32>(params[%d]);" % (var, var, var, i))
+            out.args.append(var)
+            out.index += 1
+        elif t == "SteamIPAddress_t *":
+            out.sp.append("int &%s" % name)
+            out.setup.append("cell_t* c%d = nullptr; if (ctx->LocalToPhysAddr(params[%d], &c%d) != SP_ERROR_NONE) return 0; SteamIPAddress_t %s{};" % (n, i, n, var))
+            out.args.append("&" + var)
+            out.after.append("*c%d = static_cast<cell_t>(%s.m_unIPv4);" % (n, var))
+            out.index += 1
+        elif t.startswith("const ") and t.endswith("*") and types.kind(t[6:-1].strip()) in ("int", "enum") and p.get("array_count"):
+            base = t[6:-1].strip()
+            count = [x["paramname"] for x in params].index(p["array_count"])
+            if types.kind(params[count]["paramtype"]) != "int":
+                return "array with a size that is not a number"
+            out.sp.append("const int[] %s" % name)
+            out.setup.append("cell_t* c%d = nullptr; if (ctx->LocalToPhysAddr(params[%d], &c%d) != SP_ERROR_NONE) return 0; std::vector<%s> %s; __COUNT%d__" % (n, i, n, base, var, n))
+            out.counts.append((n, count, base, var))
+            out.args.append("%s.data()" % var)
+            out.index += 1
         elif t == "const char *":
             if attrs:
                 return "const char* with %s" % sorted(attrs)
@@ -126,7 +170,8 @@ def build(m, types):
             out.args.append("Str(ctx, params[%d])" % i)
             out.index += 1
         elif t == "char *":
-            if "out_string_count" not in p:
+            nxt = params[n + 1] if n + 1 < len(params) else None
+            if "out_string_count" not in p and not (nxt and types.kind(nxt["paramtype"]) == "int"):
                 return "char* without a size"
             out.sp.append("char[] %s" % name)
             out.setup.append("char* %s = nullptr; if (ctx->LocalToString(params[%d], &%s) != SP_ERROR_NONE) return 0;" % (var, i, var))
@@ -169,10 +214,33 @@ def build(m, types):
                 value = "%s.ConvertToUint64()" % var if k == "steamid" else "static_cast<uint64>(%s)" % var
                 out.after.append("ToBuffer(ctx, params[%d], params[%d], std::to_string(%s).c_str());" % (i, i + 1, value))
                 out.index += 2
+            elif base in types.structs and not attrs:
+                if out.struct:
+                    return "two output structs"
+                out.struct = base
+                out.setup.append("%s %s{};" % (base, var))
+                out.args.append("&" + var)
+                out.structvar = var
             else:
                 return "parameter %s" % t
         else:
             return "parameter %s" % t
+    # An array's size is another parameter: its slot is known once they are all placed.
+    slots = {}
+    slot = 1
+    for n, p in enumerate(params):
+        slots[n] = slot
+        t = p["paramtype"].strip()
+        k = types.kind(t[:-1].strip()) if t.endswith("*") and not t.startswith("const") else None
+        if t in ("SteamNetworkingIdentity *", "SteamNetworkingIPAddr *") or k in ("u64", "steamid"):
+            slot += 2
+        elif t.endswith("*") and not t.startswith("const") and t[:-1].strip() in types.structs and k is None and t not in ("char *", "void *", "SteamIPAddress_t *"):
+            pass
+        else:
+            slot += 1
+    for n, count, base, var in out.counts:
+        fill = "%s.resize(static_cast<size_t>(params[%d])); for (size_t i = 0; i < %s.size(); i++) %s[i] = static_cast<%s>(c%d[i]);" % (var, slots[count], var, var, base, n)
+        out.setup = [x.replace("__COUNT%d__" % n, fill) for x in out.setup]
     return out
 
 
@@ -202,6 +270,7 @@ HEADER = """// Generated by tools/steamgen.py from s2sdk's public/steam/steam_ap
 
 #include <steam/isteamnetworkingmessages.h>
 #include <steam/isteamnetworkingsockets.h>
+#include <steam/isteamnetworkingutils.h>
 #include <steam/steamnetworkingfakeip.h>
 
 #include <cstdlib>
@@ -309,7 +378,7 @@ def main():
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     api = json.load(open(os.path.join(sdk, "public/steam/steam_api.json")))
     types = Types(api)
-    structs = {s["struct"]: s for s in api["callback_structs"]}
+    structs = types.structs
 
     cpp = [HEADER]
     rows = []
@@ -346,9 +415,11 @@ def main():
     files = {}
     for iface in api["interfaces"]:
         cls = iface["classname"]
-        if cls not in INTERFACES:
+        accessor = server_accessor(iface)
+        if not accessor or cls in SKIPPED_INTERFACES:
+            skipped.append("%s: no accessor on a game server" % cls)
             continue
-        mapname, accessor = INTERFACES[cls]
+        mapname = cls[1:]
         lines = []
         comments = header_comments(sdk, cls)
         for m in iface["methods"]:
@@ -365,8 +436,13 @@ def main():
             ret = m["returntype"].strip()
             rk = types.kind(ret)
             call = "steam->%s(%s)" % (name, ", ".join(b.args))
-            after = "\n".join("        " + a for a in b.after)
             i = b.index
+            if b.struct:
+                push = pusher(b.struct)
+                b.sp += ["%sCallback callback" % b.struct, "any data = 0"]
+                b.after.append("if (IPluginFunction* fn = ctx->GetFunctionById(static_cast<funcid_t>(params[%d]))) { fn->PushCell(false); %s(fn, &%s); fn->PushCell(params[%d]); fn->Execute(nullptr); }" % (i, push, b.structvar, i + 1))
+                i += 2
+            after = "\n".join("        " + a for a in b.after)
             if ret == "SteamAPICall_t":
                 cr = m.get("callresult")
                 push = pusher(cr) if cr else None
@@ -382,6 +458,9 @@ def main():
             elif rk in ("int", "enum"):
                 sptype = "int"
                 stmt = "const cell_t result = static_cast<cell_t>(%s);\n%s\n        return result;" % (call, after)
+            elif ret == "SteamIPAddress_t":
+                sptype = "int"
+                stmt = "const cell_t result = static_cast<cell_t>(%s.m_unIPv4);\n%s\n        return result;" % (call, after)
             elif rk == "bool":
                 sptype = "bool"
                 stmt = "const cell_t result = %s ? 1 : 0;\n%s\n        return result;" % (call, after)
@@ -454,6 +533,7 @@ methodmap %s
 %s
 }
 """ % (cls, fname, fname, mapname, body))
+    open(os.path.join(scripting, "all.inc"), "w", newline="\n").write("// Generated by tools/steamgen.py: every interface's include.\n" + "".join("#include <steamworks/%s>\n" % f for f in sorted(files)))
     print("includes: " + ", ".join(sorted(files)))
     open(os.path.join(root, "tools/steamgen_skipped.txt"), "w", newline="\n").write("\n".join(skipped) + "\n")
     print("%d natives, %d skipped" % (total, len(skipped)))

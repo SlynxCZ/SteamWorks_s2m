@@ -9,7 +9,9 @@
 #define _steamworks_callresults_included
 
 typedef CheckFileSignature_tCallback = function void (bool failure, int m_eCheckFileSignature, any data);
+typedef P2PSessionState_tCallback = function void (bool failure, int m_bConnectionActive, int m_bConnecting, int m_eP2PSessionError, int m_bUsingRelay, int m_nBytesQueuedForSend, int m_nPacketsQueuedForSend, int m_nRemoteIP, int m_nRemotePort, any data);
 typedef SteamUGCQueryCompleted_tCallback = function void (bool failure, const char[] m_handle, int m_eResult, int m_unNumResultsReturned, int m_unTotalMatchingResults, bool m_bCachedData, const char[] m_rgchNextCursor, any data);
+typedef SteamUGCDetails_tCallback = function void (bool failure, const char[] m_nPublishedFileId, int m_eResult, int m_eFileType, int m_nCreatorAppID, int m_nConsumerAppID, const char[] m_rgchTitle, const char[] m_rgchDescription, const char[] m_ulSteamIDOwner, int m_rtimeCreated, int m_rtimeUpdated, int m_rtimeAddedToUserList, int m_eVisibility, bool m_bBanned, bool m_bAcceptedForUse, bool m_bTagsTruncated, const char[] m_rgchTags, const char[] m_hFile, const char[] m_hPreviewFile, const char[] m_pchFileName, int m_nFileSize, int m_nPreviewFileSize, const char[] m_rgchURL, int m_unVotesUp, int m_unVotesDown, float m_flScore, int m_unNumChildren, const char[] m_ulTotalFilesSize, any data);
 typedef SteamUGCRequestUGCDetailsResult_tCallback = function void (bool failure, bool m_bCachedData, any data);
 typedef CreateItemResult_tCallback = function void (bool failure, int m_eResult, const char[] m_nPublishedFileId, bool m_bUserNeedsToAcceptWorkshopLegalAgreement, any data);
 typedef SubmitItemUpdateResult_tCallback = function void (bool failure, int m_eResult, bool m_bUserNeedsToAcceptWorkshopLegalAgreement, const char[] m_nPublishedFileId, any data);
@@ -28,7 +30,12 @@ typedef GetAppDependenciesResult_tCallback = function void (bool failure, int m_
 typedef DeleteItemResult_tCallback = function void (bool failure, int m_eResult, const char[] m_nPublishedFileId, any data);
 typedef WorkshopEULAStatus_tCallback = function void (bool failure, int m_eResult, int m_nAppID, int m_unVersion, int m_rtAction, bool m_bAccepted, bool m_bNeedsAction, any data);
 typedef SteamInventoryEligiblePromoItemDefIDs_tCallback = function void (bool failure, int m_result, const char[] m_steamID, int m_numEligiblePromoItemDefs, bool m_bCachedData, any data);
+typedef SteamInventoryStartPurchaseResult_tCallback = function void (bool failure, int m_result, const char[] m_ulOrderID, const char[] m_ulTransID, any data);
 typedef SteamInventoryRequestPricesResult_tCallback = function void (bool failure, int m_result, const char[] m_rgchCurrency, any data);
+typedef SteamNetConnectionInfo_tCallback = function void (bool failure, const char[] m_nUserData, int m_hListenSocket, int m__pad1, int m_idPOPRemote, int m_idPOPRelay, int m_eState, int m_eEndReason, const char[] m_szEndDebug, const char[] m_szConnectionDescription, int m_nFlags, any data);
+typedef SteamNetAuthenticationStatus_tCallback = function void (bool failure, int m_eAvail, const char[] m_debugMsg, any data);
+typedef SteamNetworkingFakeIPResult_tCallback = function void (bool failure, int m_eResult, int m_unIP, any data);
+typedef SteamRelayNetworkStatus_tCallback = function void (bool failure, int m_eAvail, int m_bPingMeasurementInProgress, int m_eAvailNetworkConfig, int m_eAvailAnyRelay, const char[] m_debugMsg, any data);
 typedef GSReputation_tCallback = function void (bool failure, int m_eResult, int m_unReputationScore, bool m_bBanned, int m_unBannedIP, int m_usBannedPort, const char[] m_ulBannedGameID, int m_unBanExpires, any data);
 typedef AssociateWithClanResult_tCallback = function void (bool failure, int m_eResult, any data);
 typedef ComputeNewPlayerCompatibilityResult_tCallback = function void (bool failure, int m_eResult, int m_cPlayersThatDontLikeCandidate, int m_cPlayersThatCandidateDoesntLike, int m_cClanPlayersThatDontLikeCandidate, const char[] m_SteamIDCandidate, any data);

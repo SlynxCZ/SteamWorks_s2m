@@ -6,3 +6,4 @@ GCManager as in InventoryManager on Source2Mod's hooks, no raw KHook hooks left:
 IGCSOListener moved into ISteamWorks.h; ISteamWorks also gives Inventory, Networking, NetworkingSockets and NetworkingMessages.
 The Steamworks API for scripts, one include and methodmap per interface (#include <steamworks/steamworks>), generated from steam_api.json by tools/steamgen.py (219 natives). OnGCMessage is on ISteamWorksListener; IGCSOListener and SendGCMessage's template are gone. gc.cpp/.h.
 Vtable slots in gamedata/steamworks.json.
+Generator covers every interface a game server can reach (295 natives) with Steam identities and IP addresses as text, int arrays and output structs through a callback. ISteamWorks.h moved to public/steamworks/. Built against plugin API 9.

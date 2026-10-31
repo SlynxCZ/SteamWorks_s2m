@@ -1,63 +1,77 @@
+ISteamClient: no accessor on a game server
+ISteamUser: no accessor on a game server
+ISteamFriends: no accessor on a game server
 ISteamUtils::SetWarningMessageHook: parameter SteamAPIWarningMessageHook_t
-ISteamUtils::GetEnteredGamepadTextInput: char* without a size
-ISteamUtils::FilterText: char* without a size
-ISteamNetworking::GetP2PSessionState: parameter P2PSessionState_t *
-ISteamNetworking::CreateListenSocket: parameter SteamIPAddress_t
-ISteamNetworking::CreateConnectionSocket: parameter SteamIPAddress_t
-ISteamNetworking::GetSocketInfo: parameter SteamIPAddress_t *
-ISteamNetworking::GetListenSocketInfo: parameter SteamIPAddress_t *
-ISteamUGC::GetQueryUGCResult: parameter SteamUGCDetails_t *
+ISteamMatchmaking: no accessor on a game server
+ISteamMatchmakingServerListResponse: no accessor on a game server
+ISteamMatchmakingPingResponse: no accessor on a game server
+ISteamMatchmakingPlayersResponse: no accessor on a game server
+ISteamMatchmakingRulesResponse: no accessor on a game server
+ISteamMatchmakingServers: no accessor on a game server
+ISteamParties: no accessor on a game server
+ISteamRemoteStorage: no accessor on a game server
+ISteamUserStats: no accessor on a game server
+ISteamApps: no accessor on a game server
+ISteamScreenshots: no accessor on a game server
+ISteamMusic: no accessor on a game server
+ISteamInput: no accessor on a game server
+ISteamController: no accessor on a game server
 ISteamUGC::AddRequiredTagGroup: parameter const SteamParamStringArray_t *
 ISteamUGC::SetItemTags: parameter const SteamParamStringArray_t *
+ISteamHTMLSurface: no accessor on a game server
 ISteamInventory::GetResultItems: array parameter SteamItemDetails_t *
 ISteamInventory::GetItemsByID: parameter const SteamItemInstanceID_t *
 ISteamInventory::SerializeResult: void * without a size after it
-ISteamInventory::GenerateItems: parameter const SteamItemDef_t *
-ISteamInventory::AddPromoItems: parameter const SteamItemDef_t *
-ISteamInventory::ExchangeItems: parameter const SteamItemDef_t *
+ISteamInventory::ExchangeItems: parameter const SteamItemInstanceID_t *
 ISteamInventory::TradeItems: parameter const SteamItemInstanceID_t *
 ISteamInventory::GetItemDefinitionIDs: array parameter SteamItemDef_t *
 ISteamInventory::GetEligiblePromoItemDefinitionIDs: array parameter SteamItemDef_t *
-ISteamInventory::StartPurchase: parameter const SteamItemDef_t *
 ISteamInventory::GetItemsWithPrices: array parameter SteamItemDef_t *
-ISteamNetworkingMessages::SendMessageToUser: parameter const SteamNetworkingIdentity &
+ISteamTimeline: no accessor on a game server
+ISteamVideo: no accessor on a game server
+ISteamParentalSettings: no accessor on a game server
+ISteamRemotePlay: no accessor on a game server
 ISteamNetworkingMessages::ReceiveMessagesOnChannel: parameter SteamNetworkingMessage_t **
-ISteamNetworkingMessages::AcceptSessionWithUser: parameter const SteamNetworkingIdentity &
-ISteamNetworkingMessages::CloseSessionWithUser: parameter const SteamNetworkingIdentity &
-ISteamNetworkingMessages::CloseChannelWithUser: parameter const SteamNetworkingIdentity &
-ISteamNetworkingMessages::GetSessionConnectionInfo: parameter const SteamNetworkingIdentity &
-ISteamNetworkingSockets::CreateListenSocketIP: parameter const SteamNetworkingIPAddr &
-ISteamNetworkingSockets::ConnectByIPAddress: parameter const SteamNetworkingIPAddr &
+ISteamNetworkingMessages::GetSessionConnectionInfo: two output structs
+ISteamNetworkingSockets::CreateListenSocketIP: parameter const SteamNetworkingConfigValue_t *
+ISteamNetworkingSockets::ConnectByIPAddress: parameter const SteamNetworkingConfigValue_t *
 ISteamNetworkingSockets::CreateListenSocketP2P: parameter const SteamNetworkingConfigValue_t *
-ISteamNetworkingSockets::ConnectP2P: parameter const SteamNetworkingIdentity &
-ISteamNetworkingSockets::GetConnectionName: char* without a size
+ISteamNetworkingSockets::ConnectP2P: parameter const SteamNetworkingConfigValue_t *
 ISteamNetworkingSockets::SendMessages: parameter SteamNetworkingMessage_t *const *
 ISteamNetworkingSockets::ReceiveMessagesOnConnection: parameter SteamNetworkingMessage_t **
-ISteamNetworkingSockets::GetConnectionInfo: parameter SteamNetConnectionInfo_t *
-ISteamNetworkingSockets::GetConnectionRealTimeStatus: parameter SteamNetConnectionRealTimeStatus_t *
-ISteamNetworkingSockets::GetDetailedConnectionStatus: char* without a size
-ISteamNetworkingSockets::GetListenSocketAddress: parameter SteamNetworkingIPAddr *
-ISteamNetworkingSockets::CreateSocketPair: parameter const SteamNetworkingIdentity *
+ISteamNetworkingSockets::GetConnectionRealTimeStatus: two output structs
 ISteamNetworkingSockets::ConfigureConnectionLanes: parameter const int *
-ISteamNetworkingSockets::GetIdentity: parameter SteamNetworkingIdentity *
-ISteamNetworkingSockets::GetAuthenticationStatus: parameter SteamNetAuthenticationStatus_t *
 ISteamNetworkingSockets::ReceiveMessagesOnPollGroup: parameter SteamNetworkingMessage_t **
 ISteamNetworkingSockets::ReceivedRelayAuthTicket: parameter SteamDatagramRelayAuthTicket *
-ISteamNetworkingSockets::FindRelayAuthTicketForServer: parameter const SteamNetworkingIdentity &
-ISteamNetworkingSockets::ConnectToHostedDedicatedServer: parameter const SteamNetworkingIdentity &
-ISteamNetworkingSockets::GetHostedDedicatedServerAddress: parameter SteamDatagramHostedAddress *
+ISteamNetworkingSockets::FindRelayAuthTicketForServer: parameter SteamDatagramRelayAuthTicket *
+ISteamNetworkingSockets::ConnectToHostedDedicatedServer: parameter const SteamNetworkingConfigValue_t *
+ISteamNetworkingSockets::GetHostedDedicatedServerAddress: excluded
 ISteamNetworkingSockets::CreateHostedDedicatedServerListenSocket: parameter const SteamNetworkingConfigValue_t *
-ISteamNetworkingSockets::GetGameCoordinatorServerLogin: parameter SteamDatagramGameCoordinatorServerLogin *
+ISteamNetworkingSockets::GetGameCoordinatorServerLogin: void * without a size after it
 ISteamNetworkingSockets::ConnectP2PCustomSignaling: parameter ISteamNetworkingConnectionSignaling *
 ISteamNetworkingSockets::ReceivedP2PCustomSignal: parameter ISteamNetworkingSignalingRecvContext *
 ISteamNetworkingSockets::GetCertificateRequest: void * without a size after it
 ISteamNetworkingSockets::SetCertificate: parameter SteamNetworkingErrMsg &
-ISteamNetworkingSockets::ResetIdentity: parameter const SteamNetworkingIdentity *
 ISteamNetworkingSockets::RunCallbacks: excluded
-ISteamNetworkingSockets::GetFakeIP: parameter SteamNetworkingFakeIPResult_t *
 ISteamNetworkingSockets::CreateListenSocketP2PFakeIP: parameter const SteamNetworkingConfigValue_t *
-ISteamNetworkingSockets::GetRemoteFakeIPForConnection: parameter SteamNetworkingIPAddr *
 ISteamNetworkingSockets::CreateFakeUDPPort: returns ISteamNetworkingFakeUDPPort *
+ISteamNetworkingUtils::AllocateMessage: returns SteamNetworkingMessage_t *
+ISteamNetworkingUtils::GetLocalPingLocation: parameter SteamNetworkPingLocation_t &
+ISteamNetworkingUtils::EstimatePingTimeBetweenTwoLocations: parameter const SteamNetworkPingLocation_t &
+ISteamNetworkingUtils::EstimatePingTimeFromLocalHost: parameter const SteamNetworkPingLocation_t &
+ISteamNetworkingUtils::ConvertPingLocationToString: parameter const SteamNetworkPingLocation_t &
+ISteamNetworkingUtils::ParsePingLocationString: parameter SteamNetworkPingLocation_t &
+ISteamNetworkingUtils::SetDebugOutputFunction: parameter FSteamNetworkingSocketsDebugOutput
+ISteamNetworkingUtils::SetGlobalConfigValuePtr: void * without a size after it
+ISteamNetworkingUtils::SetGlobalCallback_SteamNetConnectionStatusChanged: parameter FnSteamNetConnectionStatusChanged
+ISteamNetworkingUtils::SetGlobalCallback_SteamNetAuthenticationStatusChanged: parameter FnSteamNetAuthenticationStatusChanged
+ISteamNetworkingUtils::SetGlobalCallback_SteamRelayNetworkStatusChanged: parameter FnSteamRelayNetworkStatusChanged
+ISteamNetworkingUtils::SetGlobalCallback_FakeIPResult: parameter FnSteamNetworkingFakeIPResult
+ISteamNetworkingUtils::SetGlobalCallback_MessagesSessionRequest: parameter FnSteamNetworkingMessagesSessionRequest
+ISteamNetworkingUtils::SetGlobalCallback_MessagesSessionFailed: parameter FnSteamNetworkingMessagesSessionFailed
+ISteamNetworkingUtils::SetConfigValue: parameter intptr_t
+ISteamNetworkingUtils::SetConfigValueStruct: parameter const SteamNetworkingConfigValue_t &
+ISteamNetworkingUtils::GetConfigValue: parameter intptr_t
 ISteamGameServer::SetProduct: excluded
 ISteamGameServer::SetModDir: excluded
 ISteamGameServer::SetDedicatedServer: excluded
@@ -69,10 +83,10 @@ ISteamGameServer::GetAuthSessionTicket: excluded
 ISteamGameServer::BeginAuthSession: excluded
 ISteamGameServer::EndAuthSession: excluded
 ISteamGameServer::CancelAuthTicket: excluded
-ISteamGameServer::GetPublicIP: returns SteamIPAddress_t
 ISteamGameServer::HandleIncomingPacket: excluded
 ISteamGameServer::GetNextOutgoingPacket: excluded
 ISteamGameServer::SendUserConnectAndAuthenticate_DEPRECATED: excluded
 ISteamGameServer::CreateUnauthenticatedUserConnection: excluded
 ISteamGameServer::SendUserDisconnect_DEPRECATED: excluded
 ISteamGameServer::BUpdateUserData: excluded
+ISteamNetworkingFakeUDPPort: no accessor on a game server

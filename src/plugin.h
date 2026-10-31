@@ -27,7 +27,7 @@
 #include "source2mod/ISource2ModPaths.h"
 #include "source2mod/ISource2ModFunctions.h"
 #include "source2mod/ISource2ModGameSystems.h"
-#include "ISteamWorks.h"
+#include "steamworks/ISteamWorks.h"
 
 
 #include <unordered_map>
