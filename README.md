@@ -1,6 +1,6 @@
 # SteamWorks_s2m
 
-The Steamworks API for [Source2Mod](https://github.com/Source2Mod/source2mod), for SourcePawn scripts and for other C++ plugins. Without it, a plugin that wants Steam has to link `steam_api` itself and hook the game for callbacks. Forwards and the request handle follow [SM-SteamWorks](https://github.com/alliedmodders/SM-SteamWorks), so scripts ported from CS:GO mostly keep their names.
+The Steamworks API for [Source2Mod](https://source2mod.net), for SourcePawn scripts and for other C++ plugins. Without it, a plugin that wants Steam has to link `steam_api` itself and hook the game for callbacks. Forwards and the request handle follow [SM-SteamWorks](https://github.com/alliedmodders/SM-SteamWorks), so scripts ported from CS:GO mostly keep their names.
 
 Status: runs on a Linux dedicated server with bots. Answers that need a real player (group status, licenses, shared games) have not been tried with a real client yet, nor has running next to a plugin that hooks the game coordinator itself, such as an inventory plugin. Such a plugin can swallow messages before this one sees them.
 
