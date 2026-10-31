@@ -8,3 +8,4 @@ The Steamworks API for scripts, one include and methodmap per interface (#includ
 Vtable slots in gamedata/steamworks.json.
 Generator covers every interface a game server can reach (294 natives) with Steam identities and IP addresses as text, int arrays and output structs through a callback. ISteamWorks.h moved to public/steamworks/. Built against plugin API 9.
 steamworks.inc holds only what the generated includes do not: Steam forwards, SteamWorksHTTPRequest, the game coordinator; the flat SteamWorks_* duplicates of the interfaces are gone.
+A README that says what the plugin offers, how to use it from scripts and C++, and what is not yet tried with a real client.
