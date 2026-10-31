@@ -1,0 +1,22 @@
+{
+  "ISteamGameCoordinator::SendMessage": {
+    "offsets": { "windows": 0, "linux": 0 },
+    "function": { "this": "pointer", "return": "int32", "params": ["int32", "pointer", "int32"] }
+  },
+  "ISteamGameCoordinator::IsMessageAvailable": {
+    "offsets": { "windows": 1, "linux": 1 },
+    "function": { "this": "pointer", "return": "bool", "params": ["pointer"] }
+  },
+  "ISteamGameCoordinator::RetrieveMessage": {
+    "offsets": { "windows": 2, "linux": 2 },
+    "function": { "this": "pointer", "return": "int32", "params": ["pointer", "pointer", "int32", "pointer"] }
+  },
+  "ISteamGameServer::LogOnAnonymous": {
+    "offsets": { "windows": 6, "linux": 6 },
+    "function": { "this": "pointer", "return": "void", "params": [] }
+  },
+  "ISteamGameServer::WasRestartRequested": {
+    "offsets": { "windows": 11, "linux": 11 },
+    "function": { "this": "pointer", "return": "bool", "params": [] }
+  }
+}

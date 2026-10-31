@@ -997,6 +997,15 @@ typedef SteamWorksUGCDetailsCallback = function void (const char[] itemId, EResu
 native bool SteamWorks_QueryItemDetails(const char[] itemId, SteamWorksUGCDetailsCallback callback, any data = 0);
 forward void SteamWorks_OnWorkshopItemDownloaded(const char[] itemId, EResult result);
 
+#include <steamworks/steamgameserver>
+#include <steamworks/steamgameserverstats>
+#include <steamworks/steamutils>
+#include <steamworks/steamugc>
+#include <steamworks/steaminventory>
+#include <steamworks/steamnetworking>
+#include <steamworks/steamnetworkingsockets>
+#include <steamworks/steamnetworkingmessages>
+
 public SharedPlugin __pl_SteamWorks =
 {
 	name = "SteamWorks",

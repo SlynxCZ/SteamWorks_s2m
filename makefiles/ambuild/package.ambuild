@@ -8,6 +8,17 @@ builder.SetBuildFolder('package')
 # is no .vdf to generate.
 PLUGIN_FOLDER = os.path.join('addons', 'source2mod', 'plugins')
 
+
+def AddConfigs(sdk_name):
+	configs = os.path.join(builder.sourcePath, 'configs')
+	for root, _, files in os.walk(configs):
+		for f in sorted(files):
+			src = os.path.join(root, f)
+			dst = os.path.join(sdk_name, os.path.relpath(src, configs))
+			builder.AddFolder(os.path.dirname(dst))
+			builder.AddCopy(src, dst)
+
+
 for sdk_target in MMSPlugin.sdk_targets:
 	sdk = sdk_target.sdk
 
@@ -20,8 +31,11 @@ for sdk_target in MMSPlugin.sdk_targets:
 			os.path.join(folder_path, MMSPlugin.plugin_name + '.smx')
 		)
 
+	AddConfigs(sdk['name'])
+
 	# What scripts include to call this plugin.
-	include_path = os.path.join(sdk['name'], 'addons', 'source2mod', 'scripting', 'include')
+	include_path = os.path.join(sdk['name'], 'addons', 'source2mod', 'scripting', 'include', 'steamworks')
 	builder.AddFolder(include_path)
-	builder.AddCopy(os.path.join(builder.sourcePath, 'public', 'scripting', 'SteamWorks.inc'), os.path.join(include_path, 'SteamWorks.inc'))
-	builder.AddCopy(os.path.join(builder.sourcePath, 'public', 'scripting', 'SteamAPI.inc'), os.path.join(include_path, 'SteamAPI.inc'))
+	includes = os.path.join(builder.sourcePath, 'public', 'scripting', 'steamworks')
+	for f in sorted(os.listdir(includes)):
+		builder.AddCopy(os.path.join(includes, f), os.path.join(include_path, f))

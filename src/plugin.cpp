@@ -46,9 +46,8 @@ bool SteamWorksPlugin::Load(ISource2ModAPI* api, char* error, size_t maxlen, boo
         return false;
     }
 
-    const Source2ModType gameServer[] = { Source2ModType::Pointer };
-    m_pfnLogOnAnonymous = g_pSource2ModFunctions->FromVirtual(KHook::GetVtableIndex(&ISteamGameServer::LogOnAnonymous), { Source2ModType::Void, gameServer, 1, true });
-    m_pfnWasRestartRequested = g_pSource2ModFunctions->FromVirtual(KHook::GetVtableIndex(&ISteamGameServer::WasRestartRequested), { Source2ModType::Bool, gameServer, 1, true });
+    m_pfnLogOnAnonymous = g_pSource2ModFunctions->Find("ISteamGameServer::LogOnAnonymous");
+    m_pfnWasRestartRequested = g_pSource2ModFunctions->Find("ISteamGameServer::WasRestartRequested");
 
     RegisterSteamWorksNatives();
     RegisterHTTPNatives();

@@ -17,14 +17,6 @@ GCManager* g_pGCManager = nullptr;
 
 namespace
 {
-    // ISteamGameCoordinator has no destructor: its methods are the first slots.
-    enum
-    {
-        kVtableSendMessage = 0,
-        kVtableIsMessageAvailable,
-        kVtableRetrieveMessage,
-    };
-
     template <typename... A>
     cell_t FireForResult(const char* name, A&&... args)
     {
@@ -125,16 +117,12 @@ bool GCManager::Init(char* error, size_t maxlength)
 
     // VirtualTable Hooks
     {
-        const Source2ModType sendParams[] = { Source2ModType::Pointer, Source2ModType::Int32, Source2ModType::Pointer, Source2ModType::Int32 };
-        const Source2ModType availableParams[] = { Source2ModType::Pointer, Source2ModType::Pointer };
-        const Source2ModType retrieveParams[] = { Source2ModType::Pointer, Source2ModType::Pointer, Source2ModType::Pointer, Source2ModType::Int32, Source2ModType::Pointer };
-
-        m_pfnSendMessage = g_pSource2ModFunctions->FromVirtual(kVtableSendMessage, { Source2ModType::Int32, sendParams, 4, true });
-        m_pfnIsMessageAvailable = g_pSource2ModFunctions->FromVirtual(kVtableIsMessageAvailable, { Source2ModType::Bool, availableParams, 2, true });
-        m_pfnRetrieveMessage = g_pSource2ModFunctions->FromVirtual(kVtableRetrieveMessage, { Source2ModType::Int32, retrieveParams, 5, true });
+        m_pfnSendMessage = g_pSource2ModFunctions->Find("ISteamGameCoordinator::SendMessage");
+        m_pfnIsMessageAvailable = g_pSource2ModFunctions->Find("ISteamGameCoordinator::IsMessageAvailable");
+        m_pfnRetrieveMessage = g_pSource2ModFunctions->Find("ISteamGameCoordinator::RetrieveMessage");
         if (!m_pfnSendMessage || !m_pfnIsMessageAvailable || !m_pfnRetrieveMessage)
         {
-            g_pSource2ModAPI->Format(error, maxlength, "Failed to describe ISteamGameCoordinator");
+            g_pSource2ModAPI->Format(error, maxlength, "gamedata/steamworks.json has no ISteamGameCoordinator entries");
             return false;
         }
     }

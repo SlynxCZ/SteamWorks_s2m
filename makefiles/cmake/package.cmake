@@ -7,3 +7,11 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
         # The .dll on Windows is a RUNTIME artifact.
         RUNTIME_OUTPUT_DIRECTORY ${PLUGIN_OUTPUT_DIR}
 )
+
+if (EXISTS ${CMAKE_SOURCE_DIR}/configs)
+    add_custom_command(
+            TARGET ${PROJECT_NAME} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${CMAKE_SOURCE_DIR}/configs ${CMAKE_BINARY_DIR}
+    )
+endif ()
