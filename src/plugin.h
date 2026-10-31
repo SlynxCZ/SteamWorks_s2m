@@ -60,6 +60,10 @@ public:
     ISteamHTTP* HTTP() override;
     ISteamUGC* UGC() override;
     ISteamUtils* Utils() override;
+    ISteamInventory* Inventory() override;
+    ISteamNetworking* Networking() override;
+    ISteamNetworkingSockets* NetworkingSockets() override;
+    ISteamNetworkingMessages* NetworkingMessages() override;
     ISteamGameCoordinator* GameCoordinator() override;
     bool InjectGCMessage(uint32 msgType, const void* data, uint32 size) override;
     bool SendGCMessage(uint32_t eMsg, const void* body, size_t size, void (*onDelivered)(void*), void* context) override;

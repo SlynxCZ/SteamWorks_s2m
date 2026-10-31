@@ -280,6 +280,26 @@ ISteamUtils* SteamWorksPlugin::Utils()
     return SteamGameServerUtils();
 }
 
+ISteamInventory* SteamWorksPlugin::Inventory()
+{
+    return SteamGameServerInventory();
+}
+
+ISteamNetworking* SteamWorksPlugin::Networking()
+{
+    return SteamGameServerNetworking();
+}
+
+ISteamNetworkingSockets* SteamWorksPlugin::NetworkingSockets()
+{
+    return SteamGameServerNetworkingSockets_SteamAPI();
+}
+
+ISteamNetworkingMessages* SteamWorksPlugin::NetworkingMessages()
+{
+    return SteamGameServerNetworkingMessages_SteamAPI();
+}
+
 ISteamGameCoordinator* SteamWorksPlugin::GameCoordinator()
 {
     return g_pGCManager->GetGC();
