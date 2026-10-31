@@ -1,7 +1,7 @@
 /*
  * Workshop items on the game server's ISteamUGC. Item ids are decimal text.
  */
-#include "gc.h"
+#include "plugin.h"
 
 #include <cstdlib>
 #include <memory>

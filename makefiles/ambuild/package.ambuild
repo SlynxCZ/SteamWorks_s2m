@@ -23,4 +23,4 @@ for sdk_target in MMSPlugin.sdk_targets:
 	# What scripts include to call this plugin.
 	include_path = os.path.join(sdk['name'], 'addons', 'source2mod', 'scripting', 'include')
 	builder.AddFolder(include_path)
-	builder.AddCopy(os.path.join(builder.sourcePath, 'scripting', 'include', 'SteamWorks.inc'), os.path.join(include_path, 'SteamWorks.inc'))
+	builder.AddCopy(os.path.join(builder.sourcePath, 'public', 'scripting', 'SteamWorks.inc'), os.path.join(include_path, 'SteamWorks.inc'))

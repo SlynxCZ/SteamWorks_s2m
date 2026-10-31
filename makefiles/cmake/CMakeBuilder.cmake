@@ -8,7 +8,9 @@
 set(SOURCE_FILES
         src/plugin.cpp
         src/natives.cpp
-        src/gc.cpp
+        src/GCManager.cpp
+        src/gcnatives.cpp
+        src/sdk/game/shared/gc_clientsystem.cpp
         src/http.cpp
         src/ugc.cpp
         src/natives.cpp

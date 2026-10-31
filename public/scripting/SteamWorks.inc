@@ -968,6 +968,9 @@ native bool SteamWorks_InjectGCProtoMessage(int msgId, const char[] body, int le
 /** Whether SteamWorks_InjectGCMessage would be taken now. */
 native bool SteamWorks_CanInjectGC();
 
+/** From the GC's welcome until a connection status without a session. */
+native bool SteamWorks_HasGCSession();
+
 /**
  * The bytes of the message a GC forward is running for: the string parameter of
  * those forwards ends at the first zero byte, this one does not.

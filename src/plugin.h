@@ -25,9 +25,10 @@
 #include "source2mod/ISource2ModNatives.h"
 
 #include "source2mod/ISource2ModPaths.h"
+#include "source2mod/ISource2ModFunctions.h"
+#include "source2mod/ISource2ModGameSystems.h"
 #include "ISteamWorks.h"
 
-#include <khook.hpp>
 
 #include <unordered_map>
 #include <vector>
@@ -61,6 +62,11 @@ public:
     ISteamUtils* Utils() override;
     ISteamGameCoordinator* GameCoordinator() override;
     bool InjectGCMessage(uint32 msgType, const void* data, uint32 size) override;
+    bool SendGCMessage(uint32_t eMsg, const void* body, size_t size, void (*onDelivered)(void*), void* context) override;
+    void AfterGCQueued(void (*fn)(void*), void* context) override;
+    bool HasGCSession() const override;
+    void AddGCListener(ISteamWorksGCListener* listener) override;
+    void RemoveGCListener(ISteamWorksGCListener* listener) override;
     void AddListener(ISteamWorksListener* listener) override;
     void RemoveListener(ISteamWorksListener* listener) override;
 
@@ -77,8 +83,8 @@ private:
     HookReturn<void> OnDeactivated(EmptyContext& ctx, bool post);
     HookReturn<void> OnGameFrame(GameFrameContext& ctx, bool post);
 
-    KHook::Return<void> LogOnAnonymousPre(ISteamGameServer* self);
-    KHook::Return<bool> WasRestartRequestedPre(ISteamGameServer* self);
+    HookReturn<void> LogOnAnonymousPre(FunctionContext& ctx, bool post);
+    HookReturn<void> WasRestartRequestedPre(FunctionContext& ctx, bool post);
 
     void RegisterCallbacks();
     void UnregisterCallbacks();
@@ -102,9 +108,10 @@ private:
     CCallbackManual<SteamWorksPlugin, GSStatsUnloaded_t, true> m_cbStatsUnloaded;
     bool m_bRegistered = false;
 
-    KHook::Virtual<ISteamGameServer, void>* m_hLogOnAnonymous = nullptr;
-    KHook::Virtual<ISteamGameServer, bool>* m_hWasRestartRequested = nullptr;
-    ISteamGameServer* m_pHooked = nullptr;
+    ISource2ModFunction* m_pfnLogOnAnonymous = nullptr;
+    ISource2ModFunction* m_pfnWasRestartRequested = nullptr;
+    Source2ModHookId m_hLogOnAnonymous = 0;
+    Source2ModHookId m_hWasRestartRequested = 0;
 
     std::vector<ISteamWorksListener*> m_listeners;
     std::unordered_map<uint32, uint32> m_owners;
@@ -113,3 +120,11 @@ private:
 extern SteamWorksPlugin g_Plugin;
 
 void RegisterSteamWorksNatives();
+void RegisterGCNatives();
+void RegisterHTTPNatives();
+void RegisterUGCNatives();
+void RegisterUGCCallbacks();
+void UnregisterUGCCallbacks();
+
+/// Callbacks of a script that goes must not be called any more.
+void ForgetScript(PluginId id);

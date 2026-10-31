@@ -33,6 +33,29 @@ public:
     virtual void OnClientGroupStatus(CSteamID user, CSteamID group, bool member, bool officer) {}
 };
 
+/// One message of the game coordinator on its way to the game.
+class ISteamWorksGCMessage
+{
+public:
+    virtual const void* GetBody() const = 0;
+    virtual size_t GetBodySize() const = 0;
+    /// What the game gets instead; ignored under FollowCS2ServerGuidelines.
+    virtual void SetBody(const void* body, size_t size) = 0;
+
+protected:
+    ~ISteamWorksGCMessage() = default;
+};
+
+/// The raw form; IGCSOListener.h parses the shared object messages for you.
+class ISteamWorksGCListener
+{
+public:
+    virtual ~ISteamWorksGCListener() = default;
+
+    /// A protobuf message, eMsg without the protobuf flag. false drops it (ignored under FollowCS2ServerGuidelines).
+    virtual bool OnGCMessage(uint32_t eMsg, ISteamWorksGCMessage& msg) = 0;
+};
+
 class ISteamWorks
 {
 public:
@@ -58,6 +81,18 @@ public:
      *         or the game's GC client has not registered yet
      */
     virtual bool InjectGCMessage(uint32 msgType, const void* data, uint32 size) = 0;
+
+    /// A protobuf message by its id and serialized body (SendGCMessage in IGCSOListener.h);
+    /// onDelivered runs the frame after the game read it. Refused as InjectGCMessage is.
+    virtual bool SendGCMessage(uint32_t eMsg, const void* body, size_t size, void (*onDelivered)(void*), void* context) = 0;
+    /// Runs the frame after the game read every message queued so far.
+    virtual void AfterGCQueued(void (*fn)(void*), void* context) = 0;
+    /// From the GC's welcome until a connection status without a session.
+    virtual bool HasGCSession() const = 0;
+
+    /// Remove it before the listener's plugin unloads.
+    virtual void AddGCListener(ISteamWorksGCListener* listener) = 0;
+    virtual void RemoveGCListener(ISteamWorksGCListener* listener) = 0;
 
     /// Dropped by hand; remove it before the listener's plugin unloads.
     virtual void AddListener(ISteamWorksListener* listener) = 0;

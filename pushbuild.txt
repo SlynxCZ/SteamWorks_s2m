@@ -2,3 +2,4 @@ First build.
 First release: server state and browser data, groups, licenses, family sharing, stats, HTTP, Workshop items and the game coordinator, for SourcePawn (SteamWorks.inc) and C++ (ISteamWorks001). GC injection is refused under FollowCS2ServerGuidelines.
 The include goes into the package (the previous attempt failed to configure).
 Packaging without the HUD plugin leftovers (the previous attempt failed there).
+GCManager as in InventoryManager on Source2Mod's hooks, no raw KHook hooks left: IGCSOListener for C++ plugins (public/IGCSOListener.h, ISteamWorks::AddGCListener), SendGCMessage and SteamWorks_HasGCSession; the include moved to public/scripting.

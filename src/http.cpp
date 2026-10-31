@@ -3,7 +3,7 @@
  * the handle: closing it or the script going releases the request, and its
  * pending call results die with it.
  */
-#include "gc.h"
+#include "plugin.h"
 
 #include <cstdio>
 #include <string>

@@ -13,7 +13,9 @@ for sdk_target in MMSPlugin.sdk_targets:
   binary.sources += [
     os.path.join(builder.sourcePath, 'src', 'plugin.cpp'),
     os.path.join(builder.sourcePath, 'src', 'natives.cpp'),
-    os.path.join(builder.sourcePath, 'src', 'gc.cpp'),
+    os.path.join(builder.sourcePath, 'src', 'GCManager.cpp'),
+    os.path.join(builder.sourcePath, 'src', 'gcnatives.cpp'),
+    os.path.join(builder.sourcePath, 'src', 'sdk', 'game', 'shared', 'gc_clientsystem.cpp'),
     os.path.join(builder.sourcePath, 'src', 'http.cpp'),
     os.path.join(builder.sourcePath, 'src', 'ugc.cpp'),
   ]

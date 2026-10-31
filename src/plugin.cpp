@@ -1,6 +1,6 @@
 #include "plugin.h"
 #include "version_gen.h"
-#include "gc.h"
+#include "GCManager.h"
 
 #include <algorithm>
 #include <cstring>
@@ -38,9 +38,17 @@ bool SteamWorksPlugin::Load(ISource2ModAPI* api, char* error, size_t maxlen, boo
 
     g_pSource2ModHooks->Hook(HookPoint::GameFrame, HookTarget::All(), { this, &SteamWorksPlugin::OnGameFrame }, true);
 
-    g_pSteamGC = new SteamGC();
-    m_hLogOnAnonymous = new KHook::Virtual<ISteamGameServer, void>(&ISteamGameServer::LogOnAnonymous, this, &SteamWorksPlugin::LogOnAnonymousPre, nullptr);
-    m_hWasRestartRequested = new KHook::Virtual<ISteamGameServer, bool>(&ISteamGameServer::WasRestartRequested, this, &SteamWorksPlugin::WasRestartRequestedPre, nullptr);
+    g_pGCManager = new GCManager();
+    if (!g_pGCManager->Init(error, maxlen))
+    {
+        delete g_pGCManager;
+        g_pGCManager = nullptr;
+        return false;
+    }
+
+    const Source2ModType gameServer[] = { Source2ModType::Pointer };
+    m_pfnLogOnAnonymous = g_pSource2ModFunctions->FromVirtual(KHook::GetVtableIndex(&ISteamGameServer::LogOnAnonymous), { Source2ModType::Void, gameServer, 1, true });
+    m_pfnWasRestartRequested = g_pSource2ModFunctions->FromVirtual(KHook::GetVtableIndex(&ISteamGameServer::WasRestartRequested), { Source2ModType::Bool, gameServer, 1, true });
 
     RegisterSteamWorksNatives();
     RegisterHTTPNatives();
@@ -59,12 +67,8 @@ bool SteamWorksPlugin::Unload(char* error, size_t maxlen)
 {
     UnregisterCallbacks();
     m_listeners.clear();
-    delete g_pSteamGC;
-    g_pSteamGC = nullptr;
-    delete m_hLogOnAnonymous;
-    delete m_hWasRestartRequested;
-    m_hLogOnAnonymous = nullptr;
-    m_hWasRestartRequested = nullptr;
+    delete g_pGCManager;
+    g_pGCManager = nullptr;
     return true;
 }
 
@@ -90,33 +94,37 @@ void SteamWorksPlugin::OnPluginUnload(PluginId id, const char* name)
 
 HookReturn<void> SteamWorksPlugin::OnGameFrame(GameFrameContext& ctx, bool post)
 {
-    g_pSteamGC->Frame();
+    g_pGCManager->OnFrame();
     return Action::Ignore;
 }
 
-KHook::Return<void> SteamWorksPlugin::LogOnAnonymousPre(ISteamGameServer* self)
+HookReturn<void> SteamWorksPlugin::LogOnAnonymousPre(FunctionContext& ctx, bool post)
 {
     ISource2ModScriptForward* forward = g_pSource2ModNatives->FindScriptForward("SteamWorks_TokenRequested");
     if (!forward || forward->GetFunctionCount() <= 0)
-        return { KHook::Action::Ignore };
+        return Action::Ignore;
 
     char token[256] = "";
     forward->Call<void>(token, static_cast<int>(sizeof(token)));
     if (!token[0])
-        return { KHook::Action::Ignore };
+        return Action::Ignore;
 
-    self->LogOn(token);
-    return { KHook::Action::Supersede };
+    static_cast<ISteamGameServer*>(ctx.This())->LogOn(token);
+    return Action::Supersede;
 }
 
-KHook::Return<bool> SteamWorksPlugin::WasRestartRequestedPre(ISteamGameServer* self)
+HookReturn<void> SteamWorksPlugin::WasRestartRequestedPre(FunctionContext& ctx, bool post)
 {
-    if (!m_hWasRestartRequested->CallOriginal(self))
-        return { KHook::Action::Supersede, false };
+    if (!ctx.CallOriginal<bool>())
+    {
+        ctx.SetReturn<bool>(false);
+        return Action::Supersede;
+    }
 
     ISource2ModScriptForward* forward = g_pSource2ModNatives->FindScriptForward("SteamWorks_RestartRequested");
     const bool handled = forward && forward->GetFunctionCount() > 0 && forward->Call<int>() != 0;
-    return { KHook::Action::Supersede, !handled };
+    ctx.SetReturn<bool>(!handled);
+    return Action::Supersede;
 }
 
 HookReturn<void> SteamWorksPlugin::OnActivated(EmptyContext& ctx, bool post)
@@ -138,10 +146,10 @@ void SteamWorksPlugin::RegisterCallbacks()
     m_bRegistered = true;
 
     RegisterUGCCallbacks();
-    if ((m_pHooked = SteamGameServer()))
+    if (ISteamGameServer* gameServer = SteamGameServer())
     {
-        m_hLogOnAnonymous->Add(m_pHooked);
-        m_hWasRestartRequested->Add(m_pHooked);
+        m_hLogOnAnonymous = g_pSource2ModHooks->Hook(HookPoint::Function(m_pfnLogOnAnonymous), HookTarget::Instance(gameServer), { this, &SteamWorksPlugin::LogOnAnonymousPre });
+        m_hWasRestartRequested = g_pSource2ModHooks->Hook(HookPoint::Function(m_pfnWasRestartRequested), HookTarget::Instance(gameServer), { this, &SteamWorksPlugin::WasRestartRequestedPre });
     }
 
     m_cbConnected.Register(this, &SteamWorksPlugin::OnServersConnected);
@@ -161,13 +169,11 @@ void SteamWorksPlugin::UnregisterCallbacks()
     m_bRegistered = false;
 
     UnregisterUGCCallbacks();
-    g_pSteamGC->OnDeactivated();
-    if (m_pHooked)
-    {
-        m_hLogOnAnonymous->Remove(m_pHooked);
-        m_hWasRestartRequested->Remove(m_pHooked);
-        m_pHooked = nullptr;
-    }
+    if (g_pGCManager)
+        g_pGCManager->OnDeactivated();
+    g_pSource2ModHooks->Unhook(m_hLogOnAnonymous);
+    g_pSource2ModHooks->Unhook(m_hWasRestartRequested);
+    m_hLogOnAnonymous = m_hWasRestartRequested = 0;
 
     m_cbConnected.Unregister();
     m_cbConnectFailure.Unregister();
@@ -276,12 +282,40 @@ ISteamUtils* SteamWorksPlugin::Utils()
 
 ISteamGameCoordinator* SteamWorksPlugin::GameCoordinator()
 {
-    return g_pSteamGC->Interface();
+    return g_pGCManager->GetGC();
 }
 
 bool SteamWorksPlugin::InjectGCMessage(uint32 msgType, const void* data, uint32 size)
 {
-    return g_pSteamGC->Inject(msgType, std::string(static_cast<const char*>(data), size), nullptr);
+    return g_pGCManager->SendRaw(msgType, std::string(static_cast<const char*>(data), size));
+}
+
+bool SteamWorksPlugin::SendGCMessage(uint32_t eMsg, const void* body, size_t size, void (*onDelivered)(void*), void* context)
+{
+    std::function<void()> done;
+    if (onDelivered)
+        done = [onDelivered, context]() { onDelivered(context); };
+    return g_pGCManager->Send(eMsg, body, size, std::move(done));
+}
+
+void SteamWorksPlugin::AfterGCQueued(void (*fn)(void*), void* context)
+{
+    g_pGCManager->AfterQueued([fn, context]() { fn(context); });
+}
+
+bool SteamWorksPlugin::HasGCSession() const
+{
+    return g_pGCManager->HasSession();
+}
+
+void SteamWorksPlugin::AddGCListener(ISteamWorksGCListener* listener)
+{
+    g_pGCManager->AddListener(listener);
+}
+
+void SteamWorksPlugin::RemoveGCListener(ISteamWorksGCListener* listener)
+{
+    g_pGCManager->RemoveListener(listener);
 }
 
 void SteamWorksPlugin::AddListener(ISteamWorksListener* listener)
