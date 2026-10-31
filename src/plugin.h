@@ -83,7 +83,6 @@ public:
 private:
     HookReturn<void> OnActivated(EmptyContext& ctx, bool post);
     HookReturn<void> OnDeactivated(EmptyContext& ctx, bool post);
-    HookReturn<void> OnGameFrame(GameFrameContext& ctx, bool post);
 
     HookReturn<void> LogOnAnonymousPre(FunctionContext& ctx, bool post);
     HookReturn<void> WasRestartRequestedPre(FunctionContext& ctx, bool post);

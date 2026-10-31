@@ -36,8 +36,6 @@ bool SteamWorksPlugin::Load(ISource2ModAPI* api, char* error, size_t maxlen, boo
     g_pSource2ModHooks->Hook(HookPoint::GameServerSteamAPIActivated, HookTarget::All(), { this, &SteamWorksPlugin::OnActivated }, true);
     g_pSource2ModHooks->Hook(HookPoint::GameServerSteamAPIDeactivated, HookTarget::All(), { this, &SteamWorksPlugin::OnDeactivated });
 
-    g_pSource2ModHooks->Hook(HookPoint::GameFrame, HookTarget::All(), { this, &SteamWorksPlugin::OnGameFrame }, true);
-
     g_pGCManager = new GCManager();
     if (!g_pGCManager->Init(error, maxlen))
     {
@@ -45,6 +43,11 @@ bool SteamWorksPlugin::Load(ISource2ModAPI* api, char* error, size_t maxlen, boo
         g_pGCManager = nullptr;
         return false;
     }
+
+    // The game's GC client reads in the same place; the system goes with the plugin.
+    const Source2ModGameSystemId gameSystem = g_pSource2ModGameSystems->Create("SteamWorks");
+    g_pSource2ModGameSystems->Hook<EventGameFrameBoundary_t>(gameSystem, [](const EventGameFrameBoundary_t*) { g_pGCManager->OnFrame(); });
+    g_pSource2ModGameSystems->Register(gameSystem);
 
     m_pfnLogOnAnonymous = g_pSource2ModFunctions->Find("ISteamGameServer::LogOnAnonymous");
     m_pfnWasRestartRequested = g_pSource2ModFunctions->Find("ISteamGameServer::WasRestartRequested");
@@ -91,12 +94,6 @@ void SteamWorksPlugin::OnPluginUnload(PluginId id, const char* name)
 {
     ForgetScript(id);
     ForgetGeneratedCalls(id);
-}
-
-HookReturn<void> SteamWorksPlugin::OnGameFrame(GameFrameContext& ctx, bool post)
-{
-    g_pGCManager->OnFrame();
-    return Action::Ignore;
 }
 
 HookReturn<void> SteamWorksPlugin::LogOnAnonymousPre(FunctionContext& ctx, bool post)
