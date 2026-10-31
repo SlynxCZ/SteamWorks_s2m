@@ -2,7 +2,6 @@
 
 #include <source2mod/ISource2ModApi.h>
 #include <source2mod/ISource2ModPlugin.h>
-#include "source2mod/ISource2ModAddresses.h"
 #include "source2mod/ISource2ModCommands.h"
 #include "source2mod/ISource2ModConVars.h"
 #include "source2mod/ISource2ModCustomHud.h"
