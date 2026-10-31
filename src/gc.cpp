@@ -1,4 +1,4 @@
-#include "GCManager.h"
+#include "gc.h"
 
 #include "sdk/game/shared/gc_clientsystem.h"
 
@@ -198,13 +198,13 @@ void GCManager::OnDeactivated()
     m_DeliveredLastFrame.clear();
 }
 
-void GCManager::AddListener(ISteamWorksGCListener* pListener)
+void GCManager::AddListener(ISteamWorksListener* pListener)
 {
     if (pListener && std::find(m_Listeners.begin(), m_Listeners.end(), pListener) == m_Listeners.end())
         m_Listeners.push_back(pListener);
 }
 
-void GCManager::RemoveListener(ISteamWorksGCListener* pListener)
+void GCManager::RemoveListener(ISteamWorksListener* pListener)
 {
     std::erase(m_Listeners, pListener);
 }
@@ -363,8 +363,8 @@ bool GCManager::ProcessRealMessage(uint32_t eMsg, std::string& data)
         }
     }
 
-    const std::vector<ISteamWorksGCListener*> listeners = m_Listeners;
-    for (ISteamWorksGCListener* pListener : listeners)
+    const std::vector<ISteamWorksListener*> listeners = m_Listeners;
+    for (ISteamWorksListener* pListener : listeners)
     {
         if (!pListener->OnGCMessage(eMsgId, msg) && bFake)
             return false;

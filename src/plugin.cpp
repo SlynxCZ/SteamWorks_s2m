@@ -1,6 +1,6 @@
 #include "plugin.h"
 #include "version_gen.h"
-#include "GCManager.h"
+#include "gc.h"
 
 #include <algorithm>
 #include <cstring>
@@ -53,6 +53,7 @@ bool SteamWorksPlugin::Load(ISource2ModAPI* api, char* error, size_t maxlen, boo
     RegisterSteamWorksNatives();
     RegisterHTTPNatives();
     RegisterUGCNatives();
+    RegisterGeneratedNatives();
     RegisterGCNatives();
     g_pSource2ModNatives->RegisterLibrary("SteamWorks");
 
@@ -90,6 +91,7 @@ void* SteamWorksPlugin::OnSource2ModQuery(const char* iface, int* ret)
 void SteamWorksPlugin::OnPluginUnload(PluginId id, const char* name)
 {
     ForgetScript(id);
+    ForgetGeneratedCalls(id);
 }
 
 HookReturn<void> SteamWorksPlugin::OnGameFrame(GameFrameContext& ctx, bool post)
@@ -169,6 +171,7 @@ void SteamWorksPlugin::UnregisterCallbacks()
     m_bRegistered = false;
 
     UnregisterUGCCallbacks();
+    ClearGeneratedCalls();
     if (g_pGCManager)
         g_pGCManager->OnDeactivated();
     g_pSource2ModHooks->Unhook(m_hLogOnAnonymous);
@@ -328,25 +331,19 @@ bool SteamWorksPlugin::HasGCSession() const
     return g_pGCManager->HasSession();
 }
 
-void SteamWorksPlugin::AddGCListener(ISteamWorksGCListener* listener)
-{
-    g_pGCManager->AddListener(listener);
-}
-
-void SteamWorksPlugin::RemoveGCListener(ISteamWorksGCListener* listener)
-{
-    g_pGCManager->RemoveListener(listener);
-}
-
 void SteamWorksPlugin::AddListener(ISteamWorksListener* listener)
 {
     if (listener && std::find(m_listeners.begin(), m_listeners.end(), listener) == m_listeners.end())
+    {
         m_listeners.push_back(listener);
+        g_pGCManager->AddListener(listener);
+    }
 }
 
 void SteamWorksPlugin::RemoveListener(ISteamWorksListener* listener)
 {
     std::erase(m_listeners, listener);
+    g_pGCManager->RemoveListener(listener);
 }
 
 uint32 SteamWorksPlugin::OwnerOf(uint32 accountId) const

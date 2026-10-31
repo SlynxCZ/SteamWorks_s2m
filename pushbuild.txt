@@ -4,3 +4,4 @@ The include goes into the package (the previous attempt failed to configure).
 Packaging without the HUD plugin leftovers (the previous attempt failed there).
 GCManager as in InventoryManager on Source2Mod's hooks, no raw KHook hooks left: IGCSOListener for C++ plugins (public/IGCSOListener.h, ISteamWorks::AddGCListener), SendGCMessage and SteamWorks_HasGCSession; the include moved to public/scripting.
 IGCSOListener moved into ISteamWorks.h; ISteamWorks also gives Inventory, Networking, NetworkingSockets and NetworkingMessages.
+SteamAPI.inc: the Steamworks API for scripts, one methodmap per interface, generated from steam_api.json by tools/steamgen.py (219 natives). OnGCMessage is on ISteamWorksListener; IGCSOListener and SendGCMessage's template are gone. gc.cpp/.h.

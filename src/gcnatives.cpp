@@ -2,7 +2,7 @@
  * SourcePawn natives for the game coordinator: SteamWorks_SendMessageToGC, and
  * messages the game reads as if the GC had sent them.
  */
-#include "GCManager.h"
+#include "gc.h"
 
 #include <algorithm>
 #include <cstring>

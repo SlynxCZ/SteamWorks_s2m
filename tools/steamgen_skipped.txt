@@ -1,0 +1,78 @@
+ISteamUtils::SetWarningMessageHook: parameter SteamAPIWarningMessageHook_t
+ISteamUtils::GetEnteredGamepadTextInput: char* without a size
+ISteamUtils::FilterText: char* without a size
+ISteamNetworking::GetP2PSessionState: parameter P2PSessionState_t *
+ISteamNetworking::CreateListenSocket: parameter SteamIPAddress_t
+ISteamNetworking::CreateConnectionSocket: parameter SteamIPAddress_t
+ISteamNetworking::GetSocketInfo: parameter SteamIPAddress_t *
+ISteamNetworking::GetListenSocketInfo: parameter SteamIPAddress_t *
+ISteamUGC::GetQueryUGCResult: parameter SteamUGCDetails_t *
+ISteamUGC::AddRequiredTagGroup: parameter const SteamParamStringArray_t *
+ISteamUGC::SetItemTags: parameter const SteamParamStringArray_t *
+ISteamInventory::GetResultItems: array parameter SteamItemDetails_t *
+ISteamInventory::GetItemsByID: parameter const SteamItemInstanceID_t *
+ISteamInventory::SerializeResult: void * without a size after it
+ISteamInventory::GenerateItems: parameter const SteamItemDef_t *
+ISteamInventory::AddPromoItems: parameter const SteamItemDef_t *
+ISteamInventory::ExchangeItems: parameter const SteamItemDef_t *
+ISteamInventory::TradeItems: parameter const SteamItemInstanceID_t *
+ISteamInventory::GetItemDefinitionIDs: array parameter SteamItemDef_t *
+ISteamInventory::GetEligiblePromoItemDefinitionIDs: array parameter SteamItemDef_t *
+ISteamInventory::StartPurchase: parameter const SteamItemDef_t *
+ISteamInventory::GetItemsWithPrices: array parameter SteamItemDef_t *
+ISteamNetworkingMessages::SendMessageToUser: parameter const SteamNetworkingIdentity &
+ISteamNetworkingMessages::ReceiveMessagesOnChannel: parameter SteamNetworkingMessage_t **
+ISteamNetworkingMessages::AcceptSessionWithUser: parameter const SteamNetworkingIdentity &
+ISteamNetworkingMessages::CloseSessionWithUser: parameter const SteamNetworkingIdentity &
+ISteamNetworkingMessages::CloseChannelWithUser: parameter const SteamNetworkingIdentity &
+ISteamNetworkingMessages::GetSessionConnectionInfo: parameter const SteamNetworkingIdentity &
+ISteamNetworkingSockets::CreateListenSocketIP: parameter const SteamNetworkingIPAddr &
+ISteamNetworkingSockets::ConnectByIPAddress: parameter const SteamNetworkingIPAddr &
+ISteamNetworkingSockets::CreateListenSocketP2P: parameter const SteamNetworkingConfigValue_t *
+ISteamNetworkingSockets::ConnectP2P: parameter const SteamNetworkingIdentity &
+ISteamNetworkingSockets::GetConnectionName: char* without a size
+ISteamNetworkingSockets::SendMessages: parameter SteamNetworkingMessage_t *const *
+ISteamNetworkingSockets::ReceiveMessagesOnConnection: parameter SteamNetworkingMessage_t **
+ISteamNetworkingSockets::GetConnectionInfo: parameter SteamNetConnectionInfo_t *
+ISteamNetworkingSockets::GetConnectionRealTimeStatus: parameter SteamNetConnectionRealTimeStatus_t *
+ISteamNetworkingSockets::GetDetailedConnectionStatus: char* without a size
+ISteamNetworkingSockets::GetListenSocketAddress: parameter SteamNetworkingIPAddr *
+ISteamNetworkingSockets::CreateSocketPair: parameter const SteamNetworkingIdentity *
+ISteamNetworkingSockets::ConfigureConnectionLanes: parameter const int *
+ISteamNetworkingSockets::GetIdentity: parameter SteamNetworkingIdentity *
+ISteamNetworkingSockets::GetAuthenticationStatus: parameter SteamNetAuthenticationStatus_t *
+ISteamNetworkingSockets::ReceiveMessagesOnPollGroup: parameter SteamNetworkingMessage_t **
+ISteamNetworkingSockets::ReceivedRelayAuthTicket: parameter SteamDatagramRelayAuthTicket *
+ISteamNetworkingSockets::FindRelayAuthTicketForServer: parameter const SteamNetworkingIdentity &
+ISteamNetworkingSockets::ConnectToHostedDedicatedServer: parameter const SteamNetworkingIdentity &
+ISteamNetworkingSockets::GetHostedDedicatedServerAddress: parameter SteamDatagramHostedAddress *
+ISteamNetworkingSockets::CreateHostedDedicatedServerListenSocket: parameter const SteamNetworkingConfigValue_t *
+ISteamNetworkingSockets::GetGameCoordinatorServerLogin: parameter SteamDatagramGameCoordinatorServerLogin *
+ISteamNetworkingSockets::ConnectP2PCustomSignaling: parameter ISteamNetworkingConnectionSignaling *
+ISteamNetworkingSockets::ReceivedP2PCustomSignal: parameter ISteamNetworkingSignalingRecvContext *
+ISteamNetworkingSockets::GetCertificateRequest: void * without a size after it
+ISteamNetworkingSockets::SetCertificate: parameter SteamNetworkingErrMsg &
+ISteamNetworkingSockets::ResetIdentity: parameter const SteamNetworkingIdentity *
+ISteamNetworkingSockets::RunCallbacks: excluded
+ISteamNetworkingSockets::GetFakeIP: parameter SteamNetworkingFakeIPResult_t *
+ISteamNetworkingSockets::CreateListenSocketP2PFakeIP: parameter const SteamNetworkingConfigValue_t *
+ISteamNetworkingSockets::GetRemoteFakeIPForConnection: parameter SteamNetworkingIPAddr *
+ISteamNetworkingSockets::CreateFakeUDPPort: returns ISteamNetworkingFakeUDPPort *
+ISteamGameServer::SetProduct: excluded
+ISteamGameServer::SetModDir: excluded
+ISteamGameServer::SetDedicatedServer: excluded
+ISteamGameServer::LogOn: excluded
+ISteamGameServer::LogOnAnonymous: excluded
+ISteamGameServer::LogOff: excluded
+ISteamGameServer::SetSpectatorPort: excluded
+ISteamGameServer::GetAuthSessionTicket: excluded
+ISteamGameServer::BeginAuthSession: excluded
+ISteamGameServer::EndAuthSession: excluded
+ISteamGameServer::CancelAuthTicket: excluded
+ISteamGameServer::GetPublicIP: returns SteamIPAddress_t
+ISteamGameServer::HandleIncomingPacket: excluded
+ISteamGameServer::GetNextOutgoingPacket: excluded
+ISteamGameServer::SendUserConnectAndAuthenticate_DEPRECATED: excluded
+ISteamGameServer::CreateUnauthenticatedUserConnection: excluded
+ISteamGameServer::SendUserDisconnect_DEPRECATED: excluded
+ISteamGameServer::BUpdateUserData: excluded

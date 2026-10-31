@@ -69,8 +69,6 @@ public:
     bool SendGCMessage(uint32_t eMsg, const void* body, size_t size, void (*onDelivered)(void*), void* context) override;
     void AfterGCQueued(void (*fn)(void*), void* context) override;
     bool HasGCSession() const override;
-    void AddGCListener(ISteamWorksGCListener* listener) override;
-    void RemoveGCListener(ISteamWorksGCListener* listener) override;
     void AddListener(ISteamWorksListener* listener) override;
     void RemoveListener(ISteamWorksListener* listener) override;
 
@@ -127,6 +125,9 @@ void RegisterSteamWorksNatives();
 void RegisterGCNatives();
 void RegisterHTTPNatives();
 void RegisterUGCNatives();
+void RegisterGeneratedNatives();
+void ForgetGeneratedCalls(PluginId id);
+void ClearGeneratedCalls();
 void RegisterUGCCallbacks();
 void UnregisterUGCCallbacks();
 

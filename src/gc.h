@@ -34,8 +34,8 @@ public:
 	bool HasSession() const { return m_bSession; }
 	bool CanSend();
 
-	void AddListener(ISteamWorksGCListener* pListener);
-	void RemoveListener(ISteamWorksGCListener* pListener);
+	void AddListener(ISteamWorksListener* pListener);
+	void RemoveListener(ISteamWorksListener* pListener);
 
 	// The message a script forward is running for
 	const std::string* Current() const { return m_pCurrent; }
@@ -76,7 +76,7 @@ private: // Hooks
 	bool m_bSession = false;
 	bool m_bPulling = false;
 	const std::string* m_pCurrent = nullptr;
-	std::vector<ISteamWorksGCListener*> m_Listeners;
+	std::vector<ISteamWorksListener*> m_Listeners;
 	std::deque<Message> m_Queue;
 	std::vector<std::function<void()>> m_Delivered;
 	std::vector<std::function<void()>> m_DeliveredLastFrame;
