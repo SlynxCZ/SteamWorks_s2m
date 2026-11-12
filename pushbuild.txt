@@ -10,3 +10,4 @@ Generator covers every interface a game server can reach (294 natives) with Stea
 steamworks.inc holds only what the generated includes do not: Steam forwards, SteamWorksHTTPRequest, the game coordinator; the flat SteamWorks_* duplicates of the interfaces are gone.
 A README that says what the plugin offers, how to use it from scripts and C++, and what is not yet tried with a real client.
 Rebuilt for Source2Mod plugin API 10.
+CS2 14197 (2026-11-11): rebuilt against the new net message layout (s2sdk) -- the old build calls the removed INetworkMessageInternal virtuals.
