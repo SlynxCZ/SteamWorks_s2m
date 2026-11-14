@@ -98,13 +98,9 @@ bool GCManager::Init(char* error, size_t maxlength)
 
     // Inline Hooks
     {
-        const Source2ModType registerParams[] = { Source2ModType::Pointer, Source2ModType::Int32 };
-        const Source2ModType unregisterParams[] = { Source2ModType::Pointer };
-
-        // void SteamAPI_RegisterCallback(CCallbackBase* pCallback, int iCallback)
-        m_pfnRegisterCallback = g_pSource2ModFunctions->Create(reinterpret_cast<void*>(&::SteamAPI_RegisterCallback), nullptr, -1, false, Source2ModType::Void, registerParams, 2);
-        // void SteamAPI_UnregisterCallback(CCallbackBase* pCallback)
-        m_pfnUnregisterCallback = g_pSource2ModFunctions->Create(reinterpret_cast<void*>(&::SteamAPI_UnregisterCallback), nullptr, -1, false, Source2ModType::Void, unregisterParams, 1);
+        // Address and types from the function: void (CCallbackBase*, int) / void (CCallbackBase*).
+        m_pfnRegisterCallback = g_pSource2ModFunctions->Create(&::SteamAPI_RegisterCallback);
+        m_pfnUnregisterCallback = g_pSource2ModFunctions->Create(&::SteamAPI_UnregisterCallback);
 
         if (!m_pfnRegisterCallback || !m_pfnUnregisterCallback
             || !g_pSource2ModHooks->Hook(HookPoint::Function(m_pfnRegisterCallback), HookTarget::All(), { this, &GCManager::SteamAPI_RegisterCallback })
