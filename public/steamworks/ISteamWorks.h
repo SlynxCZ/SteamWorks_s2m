@@ -5,7 +5,7 @@
  *
  * Fetch it in OnAllSource2ModPluginsLoaded():
  *
- *     GET_SOURCE2MOD_IFACE(STEAMWORKS_INTERFACE_VERSION, g_pSteamWorks, ISteamWorks);
+ *     GET_SOURCE2MOD_IFACE(g_pSteamWorks, ISteamWorks, STEAMWORKS_INTERFACE_VERSION, ret, nullptr);
  */
 
 #ifndef _INCLUDE_ISTEAMWORKS_H
